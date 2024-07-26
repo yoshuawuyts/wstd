@@ -3,7 +3,7 @@
 /// See the [Status Code
 /// Registry](https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml)
 /// for more information
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u16)]
 #[allow(missing_docs)]
 #[non_exhaustive]

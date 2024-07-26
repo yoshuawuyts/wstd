@@ -1,7 +1,7 @@
 use wasi::http::types::{IncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
-use super::Headers;
+use super::{Headers, StatusCode};
 use crate::iter::AsyncIterator;
 use crate::runtime::Reactor;
 
@@ -14,6 +14,7 @@ pub struct Response {
     bytes_read: u64,
     content_length: u64,
     headers: Headers,
+    status: StatusCode,
     reactor: Reactor,
 
     // IMPORTANT: the order of these fields here matters. `incoming_body` must
@@ -28,7 +29,7 @@ impl Response {
         reactor: Reactor,
     ) -> super::Result<Self> {
         let headers: Headers = incoming.headers().into();
-
+        let status = incoming.status().into();
         let (_, content_length) = headers
             .0
             .iter()
@@ -53,12 +54,18 @@ impl Response {
 
         Ok(Self {
             bytes_read: 0,
-            headers,
+            /*  */headers,
             content_length,
             body_stream,
             _incoming_body: incoming_body,
             reactor,
+            status, 
         })
+    }
+
+    // Get the HTTP status code
+    pub fn status_code(&self) -> StatusCode{
+        self.status
     }
 
     /// Get the HTTP headers from the impl
