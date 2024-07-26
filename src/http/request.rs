@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use super::Method;
 use url::Url;
 use wasi::http::outgoing_handler::OutgoingRequest;
@@ -9,12 +11,14 @@ pub struct Request {
     method: Method,
     url: Url,
     headers: WasiHeaders,
+    body: String, 
 }
 
 impl Request {
     /// Create a new HTTP request to send off to the client.
-    pub fn new(method: Method, url: Url) -> Self {
+    pub fn new(method: Method, url: Url, body: String) -> Self {
         Self {
+            body,
             method,
             url,
             headers: WasiHeaders::new(),
@@ -49,6 +53,11 @@ impl From<Request> for OutgoingRequest {
         // that too!
         wasi_req.set_authority(Some(req.url.authority())).unwrap();
 
+        let body = wasi_req.body().unwrap();
+
+        let stream = body.write().unwrap();
+
+        stream.write(req.body.as_bytes()).unwrap();
         // All done; request is ready for send-off
         wasi_req
     }
