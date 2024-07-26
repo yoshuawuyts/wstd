@@ -63,6 +63,7 @@
 //! a little more verbose, but in turn is a little simpler to implement,
 //! maintain, and extend.
 
+pub mod http;
 pub mod io;
 pub mod iter;
 pub mod net;
