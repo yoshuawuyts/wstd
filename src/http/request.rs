@@ -68,10 +68,6 @@ impl<B: Body> Request<B> {
         // that too!
         wasi_req.set_authority(Some(self.url.authority())).unwrap();
 
-        // let body = wasi_req.body().unwrap();
-        // let stream = body.write().unwrap();
-        // stream.write(self.body.as_bytes()).unwrap();
-
         // All done; request is ready for send-off
         (wasi_req, self.body)
     }
