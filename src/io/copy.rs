@@ -6,7 +6,7 @@ where
     R: AsyncRead,
     W: AsyncWrite,
 {
-    let mut buf = vec![0; 1024];
+    let mut buf = [0; 1024];
     'read: loop {
         let bytes_read = reader.read(&mut buf).await?;
         if bytes_read == 0 {

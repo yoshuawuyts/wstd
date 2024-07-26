@@ -20,6 +20,7 @@
 
 pub use url::Url;
 
+pub use body::Body;
 pub use client::Client;
 pub use error::{Error, Result};
 pub use fields::{FieldName, FieldValue, Fields, Headers, Trailers};
@@ -28,6 +29,7 @@ pub use request::Request;
 pub use response::Response;
 pub use status_code::StatusCode;
 
+mod body;
 mod client;
 mod error;
 mod fields;
