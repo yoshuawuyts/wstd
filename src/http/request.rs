@@ -1,3 +1,5 @@
+use crate::io::{empty, Empty};
+
 use super::{Body, Method};
 use url::Url;
 use wasi::http::outgoing_handler::OutgoingRequest;
@@ -5,30 +7,43 @@ use wasi::http::types::{Headers as WasiHeaders, Scheme};
 
 /// An HTTP request
 #[derive(Debug)]
-pub struct Request {
+pub struct Request<B: Body> {
     method: Method,
     url: Url,
     headers: WasiHeaders,
-    body: Option<Body>,
+    body: B,
 }
 
-impl Request {
+impl Request<Empty> {
     /// Create a new HTTP request to send off to the client.
     pub fn new(method: Method, url: Url) -> Self {
         Self {
-            body: None,
+            body: empty(),
             method,
             url,
             headers: WasiHeaders::new(),
         }
     }
+}
 
+impl<B: Body> Request<B> {
     /// Set an HTTP body.
-    pub fn set_body(&mut self, body: Body) {
-        self.body = Some(body);
+    pub fn set_body<C: Body>(self, body: C) -> Request<C> {
+        let Self {
+            method,
+            url,
+            headers,
+            ..
+        } = self;
+        Request {
+            method,
+            url,
+            headers,
+            body,
+        }
     }
 
-    pub fn into_outgoing(self) -> (OutgoingRequest, Option<Body>) {
+    pub fn into_outgoing(self) -> (OutgoingRequest, B) {
         let wasi_req = OutgoingRequest::new(self.headers);
 
         // Set the HTTP method

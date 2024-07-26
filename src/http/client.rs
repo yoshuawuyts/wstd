@@ -2,23 +2,23 @@ use crate::io::{self, AsyncWrite};
 
 use wasi::http::types::OutgoingBody;
 
-use super::{Request, Response, Result};
+use super::{Body, Request, Response, Result};
 use crate::runtime::Reactor;
 
 /// An HTTP client.
 #[derive(Debug)]
-pub struct Client {
-    reactor: Reactor,
+pub struct Client<'a> {
+    reactor: &'a Reactor,
 }
 
-impl Client {
+impl<'a> Client<'a> {
     /// Create a new instance of `Client`
-    pub fn new(reactor: Reactor) -> Self {
+    pub fn new(reactor: &'a Reactor) -> Self {
         Self { reactor }
     }
 
     /// Send an HTTP request.
-    pub async fn send(&self, req: Request) -> Result<Response> {
+    pub async fn send<B: Body>(&self, req: Request<B>) -> Result<Response> {
         let (wasi_req, body) = req.into_outgoing();
         let wasi_body = wasi_req.body().unwrap();
         let body_stream = wasi_body.write().unwrap();
@@ -27,11 +27,9 @@ impl Client {
         let res = wasi::http::outgoing_handler::handle(wasi_req, None).unwrap();
 
         // 2. Start sending the request body
-        if let Some(body) = body {
-            io::copy(body, OutputStream::new(&self.reactor, body_stream))
-                .await
-                .expect("io::copy broke oh no");
-        }
+        io::copy(body, OutputStream::new(&self.reactor, body_stream))
+            .await
+            .expect("io::copy broke oh no");
 
         // 3. Finish sending the request body
         let trailers = None;

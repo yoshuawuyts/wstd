@@ -1,26 +1,8 @@
-//! HTTP support
-//!
-//! # Example
-//!
-//! ```rust
-//! use wstd::http::{self, Client};
-//! use wstd::runtime::block_on;
-//!
-//! fn main() -> http::Result<()> {
-//!     block_on(|reactor| async move {
-//!         let resp = Client::new(&reactor)
-//!             .post("https://httpbin.org/post")
-//!             .send()?;
-//!         
-//!         println!("status code: {}", resp.status());
-//!         Ok(())
-//!     })
-//! }
-//! ```
+//! HTTP networking support
 
 pub use url::Url;
 
-pub use body::Body;
+pub use body::*;
 pub use client::Client;
 pub use error::{Error, Result};
 pub use fields::{FieldName, FieldValue, Fields, Headers, Trailers};
@@ -30,6 +12,7 @@ pub use response::Response;
 pub use status_code::StatusCode;
 
 mod body;
+
 mod client;
 mod error;
 mod fields;
