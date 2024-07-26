@@ -1,0 +1,20 @@
+[package]
+name = "wstd"
+version = "1.0.0"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yoshuawuyts/wstd"
+documentation = "https://docs.rs/wstd"
+description = "A WebAssembly-native async stdlib"
+readme = "README.md"
+edition = "2018"
+keywords = []
+categories = []
+authors = [
+    "Yoshua Wuyts <rust@yosh.is>"
+]
+
+[features]
+
+[dependencies]
+
+[dev-dependencies]
