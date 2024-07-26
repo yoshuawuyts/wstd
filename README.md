@@ -1,7 +1,7 @@
 <h1 align="center">wstd</h1>
 <div align="center">
   <strong>
-    A WebAssembly-native async stdlib
+    An async standard library for Wasm Components and WASI 0.2
   </strong>
 </div>
 
@@ -40,6 +40,40 @@
     </a>
   </h3>
 </div>
+
+
+This is a minimal async standard library written exclusively to support Wasm
+Components. It exists primarily to enable people to write async-based
+applications in Rust before async-std, smol, or tokio land support for Wasm
+Components and WASI 0.2. Once those runtimes land support, it is recommended
+users switch to use those instead.
+
+## Examples
+
+**TCP echo server**
+
+```rust
+use wstd::io;
+use wstd::iter::AsyncIterator;
+use wstd::net::TcpListener;
+use wstd::runtime::block_on;
+
+fn main() -> io::Result<()> {
+    block_on(|reactor| async move {
+        let listener = TcpListener::bind(&reactor, "127.0.0.1:8080").await?;
+        println!("Listening on {}", listener.local_addr()?);
+        println!("type `nc localhost 8080` to create a TCP client");
+
+        let mut incoming = listener.incoming();
+        while let Some(stream) = incoming.next().await {
+            let stream = stream?;
+            println!("Accepted from: {}", stream.peer_addr()?);
+            io::copy(&stream, &stream).await?;
+        }
+        Ok(())
+    })
+}
+```
 
 ## Installation
 ```sh

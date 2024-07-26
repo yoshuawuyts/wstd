@@ -4,7 +4,7 @@ version = "1.0.0"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/yoshuawuyts/wstd"
 documentation = "https://docs.rs/wstd"
-description = "A WebAssembly-native async stdlib"
+description = "An async standard library for Wasm Components and WASI 0.2"
 readme = "README.md"
 edition = "2018"
 keywords = []
@@ -16,5 +16,7 @@ authors = [
 [features]
 
 [dependencies]
+slab = "0.4.9"
+wasi = "0.13.1"
 
 [dev-dependencies]
