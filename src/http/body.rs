@@ -30,6 +30,13 @@ where
     }
 }
 
+impl IntoBody for String {
+    type IntoBody = BoundedBody<Vec<u8>>;
+    fn into_body(self) -> Self::IntoBody {
+        BoundedBody(Cursor::new(self.into_bytes()))
+    }
+}
+
 impl<T> Body for T
 where
     T: AsyncRead,

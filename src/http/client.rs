@@ -2,7 +2,7 @@ use crate::io::{self, AsyncWrite};
 
 use wasi::http::types::OutgoingBody;
 
-use super::{Body, Request, Response, Result};
+use super::{response::IncomingBody, Body, Request, Response, Result};
 use crate::runtime::Reactor;
 
 /// An HTTP client.
@@ -18,7 +18,7 @@ impl<'a> Client<'a> {
     }
 
     /// Send an HTTP request.
-    pub async fn send<B: Body>(&self, req: Request<B>) -> Result<Response> {
+    pub async fn send<B: Body>(&self, req: Request<B>) -> Result<Response<IncomingBody>> {
         let (wasi_req, body) = req.into_outgoing();
         let wasi_body = wasi_req.body().unwrap();
         let body_stream = wasi_body.write().unwrap();
@@ -59,7 +59,7 @@ impl<'a> OutputStream<'a> {
 impl<'a> AsyncWrite for OutputStream<'a> {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let max = self.stream.check_write().unwrap() as usize;
-        let max = max.max(buf.len());
+        let max = max.min(buf.len());
         let buf = &buf[0..max];
         self.stream.write(buf).unwrap();
         self.reactor.wait_for(self.stream.subscribe()).await;

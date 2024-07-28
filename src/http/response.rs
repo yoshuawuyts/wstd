@@ -1,7 +1,8 @@
-use wasi::http::types::{IncomingBody, IncomingResponse};
+use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
-use super::{Headers, StatusCode};
+use super::{Body, Headers, StatusCode};
+use crate::io::AsyncRead;
 use crate::iter::AsyncIterator;
 use crate::runtime::Reactor;
 
@@ -10,20 +11,13 @@ const CHUNK_SIZE: u64 = 2048;
 
 /// An HTTP response
 #[derive(Debug)]
-pub struct Response {
-    bytes_read: u64,
-    content_length: u64,
+pub struct Response<B: Body> {
     headers: Headers,
     status: StatusCode,
-    reactor: Reactor,
-
-    // IMPORTANT: the order of these fields here matters. `incoming_body` must
-    // be dropped before `body_stream`.
-    body_stream: InputStream,
-    _incoming_body: IncomingBody,
+    body: B,
 }
 
-impl Response {
+impl Response<IncomingBody> {
     pub(crate) fn try_from_incoming(
         incoming: IncomingResponse,
         reactor: Reactor,
@@ -52,19 +46,25 @@ impl Response {
             .stream()
             .expect("cannot call `stream` twice on an incoming body");
 
-        Ok(Self {
+        let body = IncomingBody {
             bytes_read: 0,
-            /*  */headers,
             content_length,
+            reactor,
             body_stream,
             _incoming_body: incoming_body,
-            reactor,
-            status, 
+        };
+
+        Ok(Self {
+            headers,
+            body,
+            status,
         })
     }
+}
 
+impl<B: Body> Response<B> {
     // Get the HTTP status code
-    pub fn status_code(&self) -> StatusCode{
+    pub fn status_code(&self) -> StatusCode {
         self.status
     }
 
@@ -77,9 +77,31 @@ impl Response {
     pub fn headers_mut(&mut self) -> &mut Headers {
         &mut self.headers
     }
+
+    pub fn body(&mut self) -> &mut B {
+        &mut self.body
+    }
 }
 
-impl AsyncIterator for Response {
+#[derive(Debug)]
+pub struct IncomingBody {
+    bytes_read: u64,
+    content_length: u64,
+    reactor: Reactor,
+
+    // IMPORTANT: the order of these fields here matters. `incoming_body` must
+    // be dropped before `body_stream`.
+    body_stream: InputStream,
+    _incoming_body: WasiIncomingBody,
+}
+
+impl AsyncRead for IncomingBody {
+    async fn read(&mut self, buf: &mut [u8]) -> crate::io::Result<usize> {
+        todo!()
+    }
+}
+
+impl AsyncIterator for IncomingBody {
     type Item = Result<Vec<u8>, StreamError>;
 
     async fn next(&mut self) -> Option<Self::Item> {

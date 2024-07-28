@@ -1,6 +1,6 @@
 use crate::io::{empty, Empty};
 
-use super::{Body, Method};
+use super::{Body, IntoBody, Method};
 use url::Url;
 use wasi::http::outgoing_handler::OutgoingRequest;
 use wasi::http::types::{Headers as WasiHeaders, Scheme};
@@ -28,7 +28,7 @@ impl Request<Empty> {
 
 impl<B: Body> Request<B> {
     /// Set an HTTP body.
-    pub fn set_body<C: Body>(self, body: C) -> Request<C> {
+    pub fn set_body<C: IntoBody>(self, body: C) -> Request<C::IntoBody> {
         let Self {
             method,
             url,
@@ -39,7 +39,7 @@ impl<B: Body> Request<B> {
             method,
             url,
             headers,
-            body,
+            body: body.into_body(),
         }
     }
 
