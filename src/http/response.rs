@@ -1,9 +1,8 @@
 use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
-use super::{Body, Fields, Headers, StatusCode};
+use super::{Body, Headers, StatusCode};
 use crate::io::AsyncRead;
-use crate::iter::AsyncIterator;
 use crate::runtime::Reactor;
 
 /// Stream 2kb chunks at a time
@@ -63,7 +62,8 @@ impl Response<IncomingBody> {
             .expect("cannot call `stream` twice on an incoming body");
 
         let body = IncomingBody {
-            bytes_read: 0,
+            buf_offset: 0,
+            buf: None,
             reactor,
             body_stream,
             _incoming_body: incoming_body,
@@ -100,8 +100,10 @@ impl<B: Body> Response<B> {
 
 #[derive(Debug)]
 pub struct IncomingBody {
-    bytes_read: u64,
     reactor: Reactor,
+    buf: Option<Vec<u8>>,
+    // How many bytes have we already read from the buf?
+    buf_offset: usize,
 
     // IMPORTANT: the order of these fields here matters. `incoming_body` must
     // be dropped before `body_stream`.
@@ -110,30 +112,39 @@ pub struct IncomingBody {
 }
 
 impl AsyncRead for IncomingBody {
-    async fn read(&mut self, buf: &mut [u8]) -> crate::io::Result<usize> {
-        // // Wait for an event to be ready
-        // let pollable = self.body_stream.subscribe();
-        // self.reactor.wait_for(pollable).await;
+    async fn read(&mut self, out_buf: &mut [u8]) -> crate::io::Result<usize> {
+        loop {
+            let buf = match &mut self.buf {
+                Some(ref mut buf) => buf,
+                None => {
+                    // Wait for an event to be ready
+                    let pollable = self.body_stream.subscribe();
+                    self.reactor.wait_for(pollable).await;
 
-        // // Read the bytes from the body stream
-        // let buf = self.body_stream.read(CHUNK_SIZE);
-        // // self.bytes_read += len;
-        // Some(buf)
-        todo!();
-    }
-}
+                    // Read the bytes from the body stream
+                    let buf = self.body_stream.read(CHUNK_SIZE).map_err(|err| match err {
+                        StreamError::LastOperationFailed(err) => {
+                            std::io::Error::other(format!("{}", err.to_debug_string()))
+                        }
+                        StreamError::Closed => std::io::Error::other("Connection closed"),
+                    })?;
+                    self.buf.insert(buf)
+                }
+            };
 
-impl AsyncIterator for IncomingBody {
-    type Item = Result<Vec<u8>, StreamError>;
+            // copy bytes
+            let max = (buf.len() - self.buf_offset).min(out_buf.len());
+            let slice = &buf[self.buf_offset..max];
+            out_buf[0..max].copy_from_slice(slice);
+            self.buf_offset += max;
 
-    async fn next(&mut self) -> Option<Self::Item> {
-        // Wait for an event to be ready
-        let pollable = self.body_stream.subscribe();
-        self.reactor.wait_for(pollable).await;
+            // reset the local slice if necessary
+            if self.buf_offset == buf.len() {
+                self.buf = None;
+                self.buf_offset = 0;
+            }
 
-        // Read the bytes from the body stream
-        let buf = self.body_stream.read(CHUNK_SIZE);
-        // self.bytes_read += len;
-        Some(buf)
+            break Ok(dbg!(max));
+        }
     }
 }
