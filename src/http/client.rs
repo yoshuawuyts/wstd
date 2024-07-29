@@ -41,7 +41,10 @@ impl<'a> Client<'a> {
         // is to trap if we try and get the response more than once. The final
         // `?` is to raise the actual error if there is one.
         let res = res.get().unwrap().unwrap()?;
-        Ok(Response::try_from_incoming(res, self.reactor.clone())?)
+        Ok(Response::try_from_incoming_response(
+            res,
+            self.reactor.clone(),
+        )?)
     }
 }
 
