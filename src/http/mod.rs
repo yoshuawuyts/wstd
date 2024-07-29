@@ -2,7 +2,8 @@
 
 pub use url::Url;
 
-pub use body::*;
+#[doc(inline)]
+pub use body::{Body, IntoBody};
 pub use client::Client;
 pub use error::{Error, Result};
 pub use fields::{FieldName, FieldValue, Fields, Headers, Trailers};
@@ -11,7 +12,7 @@ pub use request::Request;
 pub use response::Response;
 pub use status_code::StatusCode;
 
-mod body;
+pub mod body;
 
 mod client;
 mod error;

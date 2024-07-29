@@ -98,6 +98,7 @@ impl<B: Body> Response<B> {
     }
 }
 
+/// An incoming HTTP body
 #[derive(Debug)]
 pub struct IncomingBody {
     reactor: Reactor,

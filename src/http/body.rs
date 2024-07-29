@@ -2,7 +2,10 @@
 
 use crate::io::{AsyncRead, Cursor};
 
+pub use super::response::IncomingBody;
+
 /// A trait representing an HTTP body.
+#[doc(hidden)]
 pub trait Body: AsyncRead {
     /// Returns the exact remaining length of the iterator, if known.
     fn len(&self) -> Option<usize>;
@@ -14,6 +17,7 @@ pub trait Body: AsyncRead {
 }
 
 /// Conversion into a `Body`.
+#[doc(hidden)]
 pub trait IntoBody {
     /// What type of `Body` are we turning this into?
     type IntoBody: Body;
