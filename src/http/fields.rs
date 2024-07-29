@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, ops::Deref};
 use wasi::http::types::{Fields as WasiFields, HeaderError};
 
 /// A type alias for [`Fields`] when used as HTTP headers.
@@ -16,6 +16,12 @@ pub type FieldValue = Vec<u8>;
 /// HTTP Fields which can be used as either trailers or headers.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Fields(pub(crate) HashMap<FieldName, Vec<FieldValue>>);
+
+impl Fields {
+    pub fn get(&self, k: &FieldName) -> Option<&[FieldValue]> {
+        self.0.get(k).map(|f| f.deref())
+    }
+}
 
 impl std::fmt::Debug for Fields {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
