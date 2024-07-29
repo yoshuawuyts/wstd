@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 /// HTTP Status Codes
 ///
 /// See the [Status Code
@@ -155,6 +157,58 @@ impl From<StatusCode> for u16 {
             StatusCode::GatewayTimeout => 504,
             StatusCode::HTTPVersionNotSupported => 505,
             StatusCode::Other(status) => status,
+        }
+    }
+}
+
+impl Display for StatusCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StatusCode::Continue => write!(f, "100 Continue"),
+            StatusCode::SwitchingProtocols => write!(f, "101 Switching Protocols"),
+            StatusCode::Ok => write!(f, "200 Ok"),
+            StatusCode::Created => write!(f, "201 Created"),
+            StatusCode::Accepted => write!(f, "202 Accepted"),
+            StatusCode::NonAuthoritativeInformation => write!(f, "203 NonAuthoritativeInformation"),
+            StatusCode::NoContent => write!(f, "204 NoContent"),
+            StatusCode::ResetContent => write!(f, "205 ResetContent"),
+            StatusCode::PartialContent => write!(f, "206 PartialContent"),
+            StatusCode::MultipleChoices => write!(f, "300 MultipleChoices"),
+            StatusCode::MovedPermanently => write!(f, "301 MovedPermanently"),
+            StatusCode::Found => write!(f, "302 Found"),
+            StatusCode::SeeOther => write!(f, "303 SeeOther"),
+            StatusCode::NotModified => write!(f, "304 NotModified"),
+            StatusCode::UseProxy => write!(f, "305 UseProxy"),
+            StatusCode::TemporaryRedirect => write!(f, "307 TemporaryRedirect"),
+            StatusCode::PermanentRedirect => write!(f, "308 PermanentRedirect"),
+            StatusCode::BadRequest => write!(f, "400 BadRequest"),
+            StatusCode::Unauthorized => write!(f, "401 Unauthorized"),
+            StatusCode::PaymentRequired => write!(f, "402 PaymentRequired"),
+            StatusCode::Forbidden => write!(f, "403 Forbidden"),
+            StatusCode::NotFound => write!(f, "404 NotFound"),
+            StatusCode::MethodNotAllowed => write!(f, "405 MethodNotAllowed"),
+            StatusCode::NotAcceptable => write!(f, "406 NotAcceptable"),
+            StatusCode::ProxyAuthenticationRequired => write!(f, "407 ProxyAuthenticationRequired"),
+            StatusCode::RequestTimeout => write!(f, "408 RequestTimeout"),
+            StatusCode::Conflict => write!(f, "409 Conflict"),
+            StatusCode::Gone => write!(f, "410 Gone"),
+            StatusCode::LengthRequired => write!(f, "411 LengthRequired"),
+            StatusCode::PreconditionFailed => write!(f, "412 PreconditionFailed"),
+            StatusCode::ContentTooLarge => write!(f, "413 ContentTooLarge"),
+            StatusCode::URITooLong => write!(f, "414 URITooLong"),
+            StatusCode::UnsupportedMediaType => write!(f, "415 UnsupportedMediaType"),
+            StatusCode::RangeNotSatisfiable => write!(f, "416 RangeNotSatisfiable"),
+            StatusCode::ExpectationFailed => write!(f, "417 ExpectationFailed"),
+            StatusCode::MisdirectedRequest => write!(f, "421 MisdirectedRequest"),
+            StatusCode::UnprocessableContent => write!(f, "422 UnprocessableContent"),
+            StatusCode::UpgradeRequired => write!(f, "426 UpgradeRequired"),
+            StatusCode::InternalServerError => write!(f, "500 InternalServerError"),
+            StatusCode::NotImplemented => write!(f, "501 NotImplemented"),
+            StatusCode::BadGateway => write!(f, "502 BadGateway"),
+            StatusCode::ServiceUnavailable => write!(f, "503 ServiceUnavailable"),
+            StatusCode::GatewayTimeout => write!(f, "504 GatewayTimeout"),
+            StatusCode::HTTPVersionNotSupported => write!(f, "505 HTTPVersionNotSupported"),
+            StatusCode::Other(status) => write!(f, "{status}"),
         }
     }
 }
