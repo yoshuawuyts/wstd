@@ -1,6 +1,6 @@
 [package]
 name = "wstd"
-version = "0.3.0"
+version = "0.4.0"
 license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/yoshuawuyts/wstd"
 documentation = "https://docs.rs/wstd"
