@@ -20,7 +20,9 @@ pub struct Fields(pub(crate) HashMap<FieldName, Vec<FieldValue>>);
 impl std::fmt::Debug for Fields {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut map = f.debug_map();
-        for (key, values) in &self.0 {
+        let mut entries: Vec<_> = self.0.iter().collect();
+        entries.sort_by_cached_key(|(k, _)| k.to_owned());
+        for (key, values) in entries {
             match values.len() {
                 0 => {
                     map.entry(key, &"");
