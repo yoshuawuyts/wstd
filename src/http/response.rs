@@ -114,38 +114,37 @@ pub struct IncomingBody {
 
 impl AsyncRead for IncomingBody {
     async fn read(&mut self, out_buf: &mut [u8]) -> crate::io::Result<usize> {
-        loop {
-            let buf = match &mut self.buf {
-                Some(ref mut buf) => buf,
-                None => {
-                    // Wait for an event to be ready
-                    let pollable = self.body_stream.subscribe();
-                    self.reactor.wait_for(pollable).await;
+        let buf = match &mut self.buf {
+            Some(ref mut buf) => buf,
+            None => {
+                // Wait for an event to be ready
+                let pollable = self.body_stream.subscribe();
+                self.reactor.wait_for(pollable).await;
 
-                    // Read the bytes from the body stream
-                    let buf = self.body_stream.read(CHUNK_SIZE).map_err(|err| match err {
-                        StreamError::LastOperationFailed(err) => {
-                            std::io::Error::other(format!("{}", err.to_debug_string()))
-                        }
-                        StreamError::Closed => std::io::Error::other("Connection closed"),
-                    })?;
-                    self.buf.insert(buf)
-                }
-            };
-
-            // copy bytes
-            let max = (buf.len() - self.buf_offset).min(out_buf.len());
-            let slice = &buf[self.buf_offset..max];
-            out_buf[0..max].copy_from_slice(slice);
-            self.buf_offset += max;
-
-            // reset the local slice if necessary
-            if self.buf_offset == buf.len() {
-                self.buf = None;
-                self.buf_offset = 0;
+                // Read the bytes from the body stream
+                let buf = self.body_stream.read(CHUNK_SIZE).map_err(|err| match err {
+                    StreamError::LastOperationFailed(err) => {
+                        std::io::Error::other(format!("{}", err.to_debug_string()))
+                    }
+                    StreamError::Closed => std::io::Error::other("Connection closed"),
+                })?;
+                self.buf.insert(buf)
             }
+        };
 
-            break Ok(dbg!(max));
+        // copy bytes
+        let len = (buf.len() - self.buf_offset).min(out_buf.len());
+        let max = self.buf_offset + len;
+        let slice = &buf[self.buf_offset..max];
+        out_buf[0..len].copy_from_slice(slice);
+        self.buf_offset += len;
+
+        // reset the local slice if necessary
+        if self.buf_offset == buf.len() {
+            self.buf = None;
+            self.buf_offset = 0;
         }
+
+        Ok(len)
     }
 }
