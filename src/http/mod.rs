@@ -2,6 +2,7 @@
 
 pub use url::Url;
 
+pub use self::into_url::IntoUrl;
 #[doc(inline)]
 pub use body::{Body, IntoBody};
 pub use client::Client;
@@ -17,6 +18,7 @@ pub mod body;
 mod client;
 mod error;
 mod fields;
+mod into_url;
 mod method;
 mod request;
 mod response;

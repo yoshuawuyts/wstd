@@ -124,7 +124,7 @@ impl AsyncRead for IncomingBody {
                 // Read the bytes from the body stream
                 let buf = self.body_stream.read(CHUNK_SIZE).map_err(|err| match err {
                     StreamError::LastOperationFailed(err) => {
-                        std::io::Error::other(format!("{}", err.to_debug_string()))
+                        std::io::Error::other(err.to_debug_string())
                     }
                     StreamError::Closed => std::io::Error::other("Connection closed"),
                 })?;
@@ -146,5 +146,28 @@ impl AsyncRead for IncomingBody {
         }
 
         Ok(len)
+    }
+}
+
+impl IncomingBody {
+    pub async fn read_all(&mut self) -> crate::io::Result<Vec<u8>> {
+        // Read the bytes from the body stream
+        let mut buf = Vec::new();
+
+        loop {
+            // Wait for an event to be ready
+            let pollable = self.body_stream.subscribe();
+            self.reactor.wait_for(pollable).await;
+
+            match self.body_stream.read(CHUNK_SIZE) {
+                Ok(mut bytes) => buf.append(&mut bytes),
+                Err(StreamError::LastOperationFailed(err)) => {
+                    return Err(std::io::Error::other(err.to_debug_string()));
+                }
+                Err(StreamError::Closed) => break,
+            };
+        }
+
+        Ok(buf)
     }
 }

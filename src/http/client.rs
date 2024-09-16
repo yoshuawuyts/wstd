@@ -2,7 +2,7 @@ use crate::io::{self, AsyncWrite};
 
 use wasi::http::types::OutgoingBody;
 
-use super::{response::IncomingBody, Body, Request, Response, Result};
+use super::{response::IncomingBody, Body, IntoUrl, Method, Request, Response, Result};
 use crate::runtime::Reactor;
 
 /// An HTTP client.
@@ -27,7 +27,7 @@ impl<'a> Client<'a> {
         let res = wasi::http::outgoing_handler::handle(wasi_req, None).unwrap();
 
         // 2. Start sending the request body
-        io::copy(body, OutputStream::new(&self.reactor, body_stream))
+        io::copy(body, OutputStream::new(self.reactor, body_stream))
             .await
             .expect("io::copy broke oh no");
 
@@ -41,10 +41,12 @@ impl<'a> Client<'a> {
         // is to trap if we try and get the response more than once. The final
         // `?` is to raise the actual error if there is one.
         let res = res.get().unwrap().unwrap()?;
-        Ok(Response::try_from_incoming_response(
-            res,
-            self.reactor.clone(),
-        )?)
+        Response::try_from_incoming_response(res, self.reactor.clone())
+    }
+
+    /// HTTP GET request.
+    pub async fn get<U: IntoUrl>(&self, url: U) -> Result<Response<IncomingBody>> {
+        self.send(Request::new(Method::Get, url)).await
     }
 }
 
