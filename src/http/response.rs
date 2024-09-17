@@ -1,3 +1,4 @@
+use serde::de::DeserializeOwned;
 use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
@@ -151,7 +152,6 @@ impl AsyncRead for IncomingBody {
 
 impl IncomingBody {
     pub async fn read_all(&mut self) -> crate::io::Result<Vec<u8>> {
-        // Read the bytes from the body stream
         let mut buf = Vec::new();
 
         loop {
@@ -169,5 +169,10 @@ impl IncomingBody {
         }
 
         Ok(buf)
+    }
+
+    pub async fn json<T: DeserializeOwned>(&mut self) -> crate::io::Result<Vec<u8>> {
+        serde_json::from_slice(&self.read_all().await?)
+            .map_err(|err| std::io::Error::other(err.to_string()))
     }
 }
