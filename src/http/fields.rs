@@ -18,8 +18,18 @@ pub type FieldValue = Vec<u8>;
 pub struct Fields(pub(crate) HashMap<FieldName, Vec<FieldValue>>);
 
 impl Fields {
+    pub fn new() -> Self {
+        Fields(HashMap::new())
+    }
+
     pub fn get(&self, k: &FieldName) -> Option<&[FieldValue]> {
         self.0.get(k).map(|f| f.deref())
+    }
+}
+
+impl Default for Fields {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -52,8 +62,14 @@ impl std::fmt::Debug for Fields {
 impl From<WasiFields> for Fields {
     fn from(wasi_fields: WasiFields) -> Self {
         let mut output = HashMap::new();
-        for (key, value) in wasi_fields.entries() {
-            let field_name = key.into();
+        for (mut key, value) in wasi_fields.entries() {
+            // if header name is not lowercase, make it lowercase
+            let field_name = if key.chars().any(|c| c.is_uppercase()) {
+                key.make_ascii_lowercase();
+                key.into()
+            } else {
+                key.into()
+            };
             let field_list: &mut Vec<_> = output.entry(field_name).or_default();
             field_list.push(value);
         }
