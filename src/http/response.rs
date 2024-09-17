@@ -171,7 +171,7 @@ impl IncomingBody {
         Ok(buf)
     }
 
-    pub async fn json<T: DeserializeOwned>(&mut self) -> crate::io::Result<Vec<u8>> {
+    pub async fn json<T: DeserializeOwned>(&mut self) -> crate::io::Result<T> {
         serde_json::from_slice(&self.read_all().await?)
             .map_err(|err| std::io::Error::other(err.to_string()))
     }
