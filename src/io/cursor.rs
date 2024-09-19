@@ -64,6 +64,9 @@ where
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         std::io::Read::read(&mut self.inner, buf)
     }
+    async fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        std::io::Read::read_to_end(&mut self.inner, buf)
+    }
 }
 
 impl AsyncWrite for Cursor<&mut [u8]> {

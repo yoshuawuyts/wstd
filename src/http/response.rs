@@ -2,7 +2,7 @@ use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
 use super::{Body, Headers, StatusCode};
-use crate::io::AsyncRead;
+use crate::io::{read_to_end, AsyncRead};
 use crate::runtime::Reactor;
 
 /// Stream 2kb chunks at a time
@@ -126,26 +126,16 @@ impl AsyncRead for IncomingBody {
 
         Ok(len)
     }
-}
 
-impl IncomingBody {
-    pub async fn read_all(&mut self) -> crate::io::Result<Vec<u8>> {
-        let mut buf = Vec::with_capacity(self.content_length.unwrap_or(CHUNK_SIZE) as usize);
-
-        loop {
-            // Wait for an event to be ready
-            let pollable = self.body_stream.subscribe();
-            self.reactor.wait_for(pollable).await;
-
-            match self.body_stream.read(CHUNK_SIZE) {
-                Ok(mut bytes) => buf.append(&mut bytes),
-                Err(StreamError::LastOperationFailed(err)) => {
-                    return Err(std::io::Error::other(err.to_debug_string()));
-                }
-                Err(StreamError::Closed) => break,
-            };
+    async fn read_to_end(&mut self, buf: &mut Vec<u8>) -> crate::io::Result<usize> {
+        // reserve additional capacity if content length is known
+        match self.content_length {
+            Some(len) if (len as usize) > buf.capacity() => {
+                buf.reserve((len as usize) - buf.capacity())
+            }
+            _ => {}
         }
 
-        Ok(buf)
+        read_to_end(&self.reactor, &self.body_stream, buf).await
     }
 }

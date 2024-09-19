@@ -58,4 +58,7 @@ impl<T: AsRef<[u8]>> AsyncRead for BoundedBody<T> {
     async fn read(&mut self, buf: &mut [u8]) -> crate::io::Result<usize> {
         self.0.read(buf).await
     }
+    async fn read_to_end(&mut self, buf: &mut Vec<u8>) -> crate::io::Result<usize> {
+        self.0.read_to_end(buf).await
+    }
 }

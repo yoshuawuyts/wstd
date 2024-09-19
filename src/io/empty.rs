@@ -6,6 +6,9 @@ impl AsyncRead for Empty {
     async fn read(&mut self, _buf: &mut [u8]) -> super::Result<usize> {
         Ok(0)
     }
+    async fn read_to_end(&mut self, _buf: &mut Vec<u8>) -> super::Result<usize> {
+        Ok(0)
+    }
 }
 
 impl AsyncWrite for Empty {

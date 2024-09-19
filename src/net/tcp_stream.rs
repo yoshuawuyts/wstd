@@ -6,7 +6,7 @@ use wasi::{
 };
 
 use crate::{
-    io::{self, AsyncRead, AsyncWrite},
+    io::{self, read_to_end, AsyncRead, AsyncWrite},
     runtime::Reactor,
 };
 
@@ -37,6 +37,9 @@ impl<'a> AsyncRead for TcpStream<'a> {
         buf[..bytes_read].clone_from_slice(&slice);
         Ok(bytes_read)
     }
+    async fn read_to_end(&mut self, buf: &mut Vec<u8>) -> crate::io::Result<usize> {
+        read_to_end(self.reactor, &self.input, buf).await
+    }
 }
 
 impl<'a> AsyncRead for &TcpStream<'a> {
@@ -46,6 +49,9 @@ impl<'a> AsyncRead for &TcpStream<'a> {
         let bytes_read = slice.len();
         buf[..bytes_read].clone_from_slice(&slice);
         Ok(bytes_read)
+    }
+    async fn read_to_end(&mut self, buf: &mut Vec<u8>) -> crate::io::Result<usize> {
+        read_to_end(self.reactor, &self.input, buf).await
     }
 }
 
