@@ -16,40 +16,12 @@ pub struct Response<B: Body> {
     body: B,
 }
 
-// #[derive(Debug)]
-// enum BodyKind {
-//     Fixed(u64),
-//     Chunked,
-// }
-
-// impl BodyKind {
-//     fn from_headers(headers: &Fields) -> BodyKind {
-//         dbg!(&headers);
-//         if let Some(values) = headers.0.get("content-length") {
-//             let value = values
-//                 .get(0)
-//                 .expect("no value found for content-length; violates HTTP/1.1");
-//             let content_length = String::from_utf8(value.to_owned())
-//                 .unwrap()
-//                 .parse::<u64>()
-//                 .expect("content-length should be a u64; violates HTTP/1.1");
-//             BodyKind::Fixed(content_length)
-//         } else if let Some(values) = headers.0.get("transfer-encoding") {
-//             dbg!(values);
-//             BodyKind::Chunked
-//         } else {
-//             dbg!("Encoding neither has a content-length nor transfer-encoding");
-//             BodyKind::Chunked
-//         }
-//     }
-// }
-
 impl Response<IncomingBody> {
     pub(crate) fn try_from_incoming_response(
         incoming: IncomingResponse,
         reactor: Reactor,
     ) -> super::Result<Self> {
-        let headers: Headers = incoming.headers().into();
+        let headers: Headers = incoming.headers();
         let status = incoming.status().into();
 
         // `body_stream` is a child of `incoming_body` which means we cannot
@@ -61,7 +33,13 @@ impl Response<IncomingBody> {
             .stream()
             .expect("cannot call `stream` twice on an incoming body");
 
+        let content_length = headers
+            .get(&"content-length".to_string())
+            .first()
+            .and_then(|v| std::str::from_utf8(v).ok())
+            .and_then(|s| s.parse::<u64>().ok());
         let body = IncomingBody {
+            content_length,
             buf_offset: 0,
             buf: None,
             reactor,
@@ -102,6 +80,7 @@ impl<B: Body> Response<B> {
 #[derive(Debug)]
 pub struct IncomingBody {
     reactor: Reactor,
+    content_length: Option<u64>,
     buf: Option<Vec<u8>>,
     // How many bytes have we already read from the buf?
     buf_offset: usize,
@@ -151,7 +130,7 @@ impl AsyncRead for IncomingBody {
 
 impl IncomingBody {
     pub async fn read_all(&mut self) -> crate::io::Result<Vec<u8>> {
-        let mut buf = Vec::new();
+        let mut buf = Vec::with_capacity(self.content_length.unwrap_or(CHUNK_SIZE) as usize);
 
         loop {
             // Wait for an event to be ready
