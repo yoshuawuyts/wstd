@@ -1,8 +1,9 @@
 use crate::io::{self, AsyncWrite};
 
+use url::Url;
 use wasi::http::types::OutgoingBody;
 
-use super::{response::IncomingBody, Body, IntoUrl, Method, Request, Response, Result};
+use super::{response::IncomingBody, Body, Method, Request, Response, Result};
 use crate::runtime::Reactor;
 
 /// An HTTP client.
@@ -45,7 +46,7 @@ impl<'a> Client<'a> {
     }
 
     /// HTTP GET request.
-    pub async fn get<U: IntoUrl>(&self, url: U) -> Result<Response<IncomingBody>> {
+    pub async fn get(&self, url: Url) -> Result<Response<IncomingBody>> {
         self.send(Request::new(Method::Get, url)).await
     }
 }

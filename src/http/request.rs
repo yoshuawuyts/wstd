@@ -1,6 +1,6 @@
 use crate::io::{empty, Empty};
 
-use super::{Body, Headers, IntoBody, IntoUrl, Method};
+use super::{Body, Headers, IntoBody, Method};
 use url::Url;
 use wasi::http::outgoing_handler::OutgoingRequest;
 use wasi::http::types::Scheme;
@@ -16,11 +16,11 @@ pub struct Request<B: Body> {
 
 impl Request<Empty> {
     /// Create a new HTTP request to send off to the client.
-    pub fn new<U: IntoUrl>(method: Method, url: U) -> Self {
+    pub fn new(method: Method, url: Url) -> Self {
         Self {
             body: empty(),
             method,
-            url: url.into_url().expect("invalid URL"), // TODO change to error?
+            url,
             headers: Headers::new(),
         }
     }
