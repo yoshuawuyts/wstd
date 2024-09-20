@@ -70,6 +70,6 @@ impl TryFrom<Fields> for WasiFields {
                 list.push((name.clone().into_owned(), value));
             }
         }
-        Ok(WasiFields::from_list(&list)?)
+        WasiFields::from_list(&list)
     }
 }
