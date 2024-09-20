@@ -5,9 +5,6 @@ use super::{Body, Headers, StatusCode};
 use crate::io::AsyncRead;
 use crate::runtime::Reactor;
 
-/// Stream 2kb chunks at a time
-const CHUNK_SIZE: u64 = 2048;
-
 /// An HTTP response
 #[derive(Debug)]
 pub struct Response<B: Body> {
@@ -62,8 +59,6 @@ impl Response<IncomingBody> {
             .expect("cannot call `stream` twice on an incoming body");
 
         let body = IncomingBody {
-            buf_offset: 0,
-            buf: None,
             reactor,
             body_stream,
             _incoming_body: incoming_body,
@@ -102,9 +97,6 @@ impl<B: Body> Response<B> {
 #[derive(Debug)]
 pub struct IncomingBody {
     reactor: Reactor,
-    buf: Option<Vec<u8>>,
-    // How many bytes have we already read from the buf?
-    buf_offset: usize,
 
     // IMPORTANT: the order of these fields here matters. `incoming_body` must
     // be dropped before `body_stream`.
@@ -113,39 +105,20 @@ pub struct IncomingBody {
 }
 
 impl AsyncRead for IncomingBody {
-    async fn read(&mut self, out_buf: &mut [u8]) -> crate::io::Result<usize> {
-        let buf = match &mut self.buf {
-            Some(ref mut buf) => buf,
-            None => {
-                // Wait for an event to be ready
-                let pollable = self.body_stream.subscribe();
-                self.reactor.wait_for(pollable).await;
+    async fn read(&mut self, buf: &mut [u8]) -> crate::io::Result<usize> {
+        // Wait for an event to be ready
+        self.reactor.wait_for(self.body_stream.subscribe()).await;
 
-                // Read the bytes from the body stream
-                let buf = match self.body_stream.read(CHUNK_SIZE) {
-                    Ok(buf) => buf,
-                    Err(StreamError::Closed) => return Ok(0),
-                    Err(StreamError::LastOperationFailed(err)) => {
-                        return Err(std::io::Error::other(err.to_debug_string()));
-                    }
-                };
-                self.buf.insert(buf)
+        // Read the bytes from the body stream
+        let slice = match self.body_stream.read(buf.len() as u64) {
+            Ok(slice) => slice,
+            Err(StreamError::Closed) => return Ok(0),
+            Err(StreamError::LastOperationFailed(err)) => {
+                return Err(std::io::Error::other(err.to_debug_string()));
             }
         };
-
-        // copy bytes
-        let len = (buf.len() - self.buf_offset).min(out_buf.len());
-        let max = self.buf_offset + len;
-        let slice = &buf[self.buf_offset..max];
-        out_buf[0..len].copy_from_slice(slice);
-        self.buf_offset += len;
-
-        // reset the local slice if necessary
-        if self.buf_offset == buf.len() {
-            self.buf = None;
-            self.buf_offset = 0;
-        }
-
-        Ok(len)
+        let bytes_read = slice.len();
+        buf[..bytes_read].copy_from_slice(&slice);
+        Ok(bytes_read)
     }
 }
