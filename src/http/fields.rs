@@ -1,5 +1,6 @@
+use super::Error;
 use std::{borrow::Cow, collections::HashMap, ops::Deref};
-use wasi::http::types::{Fields as WasiFields, HeaderError};
+use wasi::http::types::{ErrorCode, Fields as WasiFields, HeaderError};
 
 /// A type alias for [`Fields`] when used as HTTP headers.
 pub type Headers = Fields;
@@ -18,8 +19,31 @@ pub type FieldValue = Vec<u8>;
 pub struct Fields(pub(crate) HashMap<FieldName, Vec<FieldValue>>);
 
 impl Fields {
+    pub(crate) fn new() -> Self {
+        Self(HashMap::new())
+    }
+    pub fn contains(&self, k: &FieldName) -> bool {
+        self.0.get(k).is_some_and(|v| !v.is_empty())
+    }
     pub fn get(&self, k: &FieldName) -> Option<&[FieldValue]> {
         self.0.get(k).map(|f| f.deref())
+    }
+    pub fn get_mut(&mut self, k: &FieldName) -> Option<&mut Vec<FieldValue>> {
+        self.0.get_mut(k)
+    }
+    pub fn insert(&mut self, k: FieldName, v: Vec<FieldValue>) {
+        self.0.insert(k, v);
+    }
+    pub fn append(&mut self, k: FieldName, v: FieldValue) {
+        match self.0.get_mut(&k) {
+            Some(vals) => vals.push(v),
+            None => {
+                self.0.insert(k, vec![v]);
+            }
+        }
+    }
+    pub fn remove(&mut self, k: &FieldName) -> Option<Vec<FieldValue>> {
+        self.0.remove(k)
     }
 }
 
@@ -62,7 +86,7 @@ impl From<WasiFields> for Fields {
 }
 
 impl TryFrom<Fields> for WasiFields {
-    type Error = HeaderError;
+    type Error = Error;
     fn try_from(fields: Fields) -> Result<Self, Self::Error> {
         let mut list = Vec::with_capacity(fields.0.capacity());
         for (name, values) in fields.0.into_iter() {
@@ -70,6 +94,13 @@ impl TryFrom<Fields> for WasiFields {
                 list.push((name.clone().into_owned(), value));
             }
         }
-        Ok(WasiFields::from_list(&list)?)
+        Ok(WasiFields::from_list(&list).map_err(|e| {
+            let msg = match e {
+                HeaderError::InvalidSyntax => "header has invalid syntax",
+                HeaderError::Forbidden => "header key is forbidden",
+                HeaderError::Immutable => "headers are immutable",
+            };
+            ErrorCode::InternalError(Some(msg.to_string()))
+        })?)
     }
 }
