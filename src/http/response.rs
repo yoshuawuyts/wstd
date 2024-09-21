@@ -58,9 +58,6 @@ impl Response<IncomingBody> {
     //pub fn trailers(&self) -> Option<&Trailers> {
     //    self.body.trailers.as_ref()
     //}
-    pub fn content_length(&self) -> Option<u64> {
-        self.body.content_length
-    }
 }
 
 impl<B: Body> Response<B> {
