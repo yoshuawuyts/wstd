@@ -1,4 +1,4 @@
-use std::{borrow::Cow, collections::HashMap, ops::Deref};
+use std::{collections::HashMap, ops::Deref};
 use wasi::http::types::{Fields as WasiFields, HeaderError};
 
 /// A type alias for [`Fields`] when used as HTTP headers.
@@ -8,7 +8,7 @@ pub type Headers = Fields;
 pub type Trailers = Fields;
 
 /// An HTTP Field name.
-pub type FieldName = Cow<'static, str>;
+pub type FieldName = String;
 
 /// An HTTP Field value.
 pub type FieldValue = Vec<u8>;
@@ -18,7 +18,7 @@ pub type FieldValue = Vec<u8>;
 pub struct Fields(pub(crate) HashMap<FieldName, Vec<FieldValue>>);
 
 impl Fields {
-    pub fn get(&self, k: &FieldName) -> Option<&[FieldValue]> {
+    pub fn get(&self, k: &str) -> Option<&[FieldValue]> {
         self.0.get(k).map(|f| f.deref())
     }
 }
@@ -52,8 +52,7 @@ impl std::fmt::Debug for Fields {
 impl From<WasiFields> for Fields {
     fn from(wasi_fields: WasiFields) -> Self {
         let mut output = HashMap::new();
-        for (key, value) in wasi_fields.entries() {
-            let field_name = key.into();
+        for (field_name, value) in wasi_fields.entries() {
             let field_list: &mut Vec<_> = output.entry(field_name).or_default();
             field_list.push(value);
         }
@@ -67,7 +66,7 @@ impl TryFrom<Fields> for WasiFields {
         let mut list = Vec::with_capacity(fields.0.capacity());
         for (name, values) in fields.0.into_iter() {
             for value in values {
-                list.push((name.clone().into_owned(), value));
+                list.push((name.clone(), value));
             }
         }
         WasiFields::from_list(&list)

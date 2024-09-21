@@ -10,8 +10,8 @@ pub trait AsyncRead {
         let mut n = 0;
 
         loop {
-            // grow buf, if less than default chuck size
-            if buf.len() < n + CHUNK_SIZE {
+            // grow buf if empty
+            if buf.len() == n {
                 buf.resize(n + CHUNK_SIZE, 0u8);
             }
 
