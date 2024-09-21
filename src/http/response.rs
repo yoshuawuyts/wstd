@@ -53,11 +53,11 @@ impl Response<IncomingBody> {
         })
     }
 
-    /// NEEDS wasmtime PR to be released:
-    /// https://github.com/bytecodealliance/wasmtime/pull/9208
-    pub fn trailers(&self) -> Option<&Trailers> {
-        self.body.trailers.as_ref()
-    }
+    ///// NEEDS wasmtime PR to be released:
+    ///// https://github.com/bytecodealliance/wasmtime/pull/9208
+    //pub fn trailers(&self) -> Option<&Trailers> {
+    //    self.body.trailers.as_ref()
+    //}
     pub fn content_length(&self) -> Option<u64> {
         self.body.content_length
     }
