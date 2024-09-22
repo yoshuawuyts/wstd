@@ -1,16 +1,16 @@
 use crate::io::{empty, Empty};
 
-use super::{Body, IntoBody, Method};
+use super::{Body, Headers, IntoBody, Method, Result};
 use url::Url;
 use wasi::http::outgoing_handler::OutgoingRequest;
-use wasi::http::types::{Headers as WasiHeaders, Scheme};
+use wasi::http::types::Scheme;
 
 /// An HTTP request
 #[derive(Debug)]
 pub struct Request<B: Body> {
     method: Method,
     url: Url,
-    headers: WasiHeaders,
+    headers: Headers,
     body: B,
 }
 
@@ -21,12 +21,19 @@ impl Request<Empty> {
             body: empty(),
             method,
             url,
-            headers: WasiHeaders::new(),
+            headers: Headers::new(),
         }
     }
 }
 
 impl<B: Body> Request<B> {
+    pub fn headers(&self) -> &Headers {
+        &self.headers
+    }
+    pub fn headers_mut(&mut self) -> &mut Headers {
+        &mut self.headers
+    }
+
     /// Set an HTTP body.
     pub fn set_body<C: IntoBody>(self, body: C) -> Request<C::IntoBody> {
         let Self {
@@ -43,8 +50,8 @@ impl<B: Body> Request<B> {
         }
     }
 
-    pub fn into_outgoing(self) -> (OutgoingRequest, B) {
-        let wasi_req = OutgoingRequest::new(self.headers);
+    pub fn try_into_outgoing(self) -> Result<(OutgoingRequest, B)> {
+        let wasi_req = OutgoingRequest::new(self.headers.try_into()?);
 
         // Set the HTTP method
         wasi_req.set_method(&self.method.into()).unwrap();
@@ -69,6 +76,6 @@ impl<B: Body> Request<B> {
         wasi_req.set_authority(Some(self.url.authority())).unwrap();
 
         // All done; request is ready for send-off
-        (wasi_req, self.body)
+        Ok((wasi_req, self.body))
     }
 }

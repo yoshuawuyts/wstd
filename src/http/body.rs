@@ -41,6 +41,13 @@ impl IntoBody for String {
     }
 }
 
+impl IntoBody for Vec<u8> {
+    type IntoBody = BoundedBody<Vec<u8>>;
+    fn into_body(self) -> Self::IntoBody {
+        BoundedBody(Cursor::new(self))
+    }
+}
+
 impl<T> Body for T
 where
     T: AsyncRead,

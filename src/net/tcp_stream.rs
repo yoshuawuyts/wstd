@@ -32,9 +32,15 @@ impl<'a> TcpStream<'a> {
 impl<'a> AsyncRead for TcpStream<'a> {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.reactor.wait_for(self.input.subscribe()).await;
-        let slice = self.input.read(buf.len() as u64).map_err(to_io_err)?;
+        let slice = match self.input.read(buf.len() as u64) {
+            Ok(slice) => slice,
+            Err(StreamError::Closed) => return Ok(0),
+            Err(StreamError::LastOperationFailed(err)) => {
+                return Err(Error::other(err.to_debug_string()));
+            }
+        };
         let bytes_read = slice.len();
-        buf[..bytes_read].clone_from_slice(&slice);
+        buf[..bytes_read].copy_from_slice(&slice);
         Ok(bytes_read)
     }
 }
@@ -42,9 +48,15 @@ impl<'a> AsyncRead for TcpStream<'a> {
 impl<'a> AsyncRead for &TcpStream<'a> {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.reactor.wait_for(self.input.subscribe()).await;
-        let slice = self.input.read(buf.len() as u64).map_err(to_io_err)?;
+        let slice = match self.input.read(buf.len() as u64) {
+            Ok(slice) => slice,
+            Err(StreamError::Closed) => return Ok(0),
+            Err(StreamError::LastOperationFailed(err)) => {
+                return Err(Error::other(err.to_debug_string()));
+            }
+        };
         let bytes_read = slice.len();
-        buf[..bytes_read].clone_from_slice(&slice);
+        buf[..bytes_read].copy_from_slice(&slice);
         Ok(bytes_read)
     }
 }
