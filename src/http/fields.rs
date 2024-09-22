@@ -33,26 +33,18 @@ impl Fields {
     }
     pub fn contains(&self, key: &str) -> bool {
         self.0
-            .get(key)
+            .get(&key.to_lowercase())
             .is_some_and(|entry| !entry.values.is_empty())
     }
     pub fn get(&self, key: &str) -> Option<&[FieldValue]> {
-        if key.chars().any(|c| c.is_uppercase()) {
-            self.0
-                .get(&key.to_lowercase())
-                .map(|entry| entry.values.deref())
-        } else {
-            self.0.get(key).map(|entry| entry.values.deref())
-        }
+        self.0
+            .get(&key.to_lowercase())
+            .map(|entry| entry.values.deref())
     }
     pub fn get_mut(&mut self, key: &str) -> Option<&mut Vec<FieldValue>> {
-        if key.chars().any(|c| c.is_uppercase()) {
-            self.0
-                .get_mut(&key.to_lowercase())
-                .map(|entry| entry.values.as_mut())
-        } else {
-            self.0.get_mut(key).map(|entry| entry.values.as_mut())
-        }
+        self.0
+            .get_mut(&key.to_lowercase())
+            .map(|entry| entry.values.as_mut())
     }
     pub fn insert(&mut self, key: String, values: Vec<FieldValue>) {
         self.0
@@ -66,7 +58,7 @@ impl Fields {
         entry.values.push(value);
     }
     pub fn remove(&mut self, key: &str) -> Option<Vec<FieldValue>> {
-        self.0.remove(key).map(|entry| entry.values)
+        self.0.remove(&key.to_lowercase()).map(|entry| entry.values)
     }
 }
 
