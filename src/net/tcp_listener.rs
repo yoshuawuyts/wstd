@@ -11,16 +11,15 @@ use super::TcpStream;
 
 /// A TCP socket server, listening for connections.
 #[derive(Debug)]
-pub struct TcpListener<'a> {
+pub struct TcpListener {
     socket: TcpSocket,
-    reactor: &'a Reactor,
 }
 
-impl<'a> TcpListener<'a> {
+impl TcpListener {
     /// Creates a new TcpListener which will be bound to the specified address.
     ///
     /// The returned listener is ready for accepting connections.
-    pub async fn bind(reactor: &'a Reactor, addr: &str) -> io::Result<Self> {
+    pub async fn bind(addr: &str) -> io::Result<Self> {
         let addr: SocketAddr = addr
             .parse()
             .map_err(|_| io::Error::other("failed to parse string to socket addr"))?;
@@ -41,6 +40,7 @@ impl<'a> TcpListener<'a> {
             }
             SocketAddr::V6(_) => todo!("IPv6 not yet supported in `wstd::net::TcpListener`"),
         };
+        let reactor = Reactor::current();
 
         socket
             .start_bind(&network, local_address)
@@ -51,7 +51,7 @@ impl<'a> TcpListener<'a> {
         socket.start_listen().map_err(to_io_err)?;
         reactor.wait_for(socket.subscribe()).await;
         socket.finish_listen().map_err(to_io_err)?;
-        Ok(Self { socket, reactor })
+        Ok(Self { socket })
     }
 
     /// Returns the local socket address of this listener.
@@ -70,15 +70,14 @@ impl<'a> TcpListener<'a> {
 /// An iterator that infinitely accepts connections on a TcpListener.
 #[derive(Debug)]
 pub struct Incoming<'a> {
-    listener: &'a TcpListener<'a>,
+    listener: &'a TcpListener,
 }
 
 impl<'a> AsyncIterator for Incoming<'a> {
-    type Item = io::Result<TcpStream<'a>>;
+    type Item = io::Result<TcpStream>;
 
     async fn next(&mut self) -> Option<Self::Item> {
-        self.listener
-            .reactor
+        Reactor::current()
             .wait_for(self.listener.socket.subscribe())
             .await;
         let (socket, input, output) = match self.listener.socket.accept().map_err(to_io_err) {
@@ -89,7 +88,6 @@ impl<'a> AsyncIterator for Incoming<'a> {
             socket,
             input,
             output,
-            reactor: self.listener.reactor,
         }))
     }
 }

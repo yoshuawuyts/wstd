@@ -45,10 +45,7 @@ pub struct Response<B: Body> {
 // }
 
 impl Response<IncomingBody> {
-    pub(crate) fn try_from_incoming_response(
-        incoming: IncomingResponse,
-        reactor: Reactor,
-    ) -> super::Result<Self> {
+    pub(crate) fn try_from_incoming_response(incoming: IncomingResponse) -> super::Result<Self> {
         let headers: Headers = incoming.headers().into();
         let status = incoming.status().into();
 
@@ -64,7 +61,6 @@ impl Response<IncomingBody> {
         let body = IncomingBody {
             buf_offset: 0,
             buf: None,
-            reactor,
             body_stream,
             _incoming_body: incoming_body,
         };
@@ -101,7 +97,6 @@ impl<B: Body> Response<B> {
 /// An incoming HTTP body
 #[derive(Debug)]
 pub struct IncomingBody {
-    reactor: Reactor,
     buf: Option<Vec<u8>>,
     // How many bytes have we already read from the buf?
     buf_offset: usize,
@@ -119,7 +114,7 @@ impl AsyncRead for IncomingBody {
             None => {
                 // Wait for an event to be ready
                 let pollable = self.body_stream.subscribe();
-                self.reactor.wait_for(pollable).await;
+                Reactor::current().wait_for(pollable).await;
 
                 // Read the bytes from the body stream
                 let buf = self.body_stream.read(CHUNK_SIZE).map_err(|err| match err {

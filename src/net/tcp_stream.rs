@@ -11,14 +11,13 @@ use crate::{
 };
 
 /// A TCP stream between a local and a remote socket.
-pub struct TcpStream<'a> {
-    pub(super) reactor: &'a Reactor,
+pub struct TcpStream {
     pub(super) input: InputStream,
     pub(super) output: OutputStream,
     pub(super) socket: TcpSocket,
 }
 
-impl<'a> TcpStream<'a> {
+impl TcpStream {
     /// Returns the socket address of the remote peer of this TCP connection.
     pub fn peer_addr(&self) -> io::Result<String> {
         let addr = self
@@ -29,9 +28,9 @@ impl<'a> TcpStream<'a> {
     }
 }
 
-impl<'a> AsyncRead for TcpStream<'a> {
+impl AsyncRead for TcpStream {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.reactor.wait_for(self.input.subscribe()).await;
+        Reactor::current().wait_for(self.input.subscribe()).await;
         let slice = self.input.read(buf.len() as u64).map_err(to_io_err)?;
         let bytes_read = slice.len();
         buf[..bytes_read].clone_from_slice(&slice);
@@ -39,9 +38,9 @@ impl<'a> AsyncRead for TcpStream<'a> {
     }
 }
 
-impl<'a> AsyncRead for &TcpStream<'a> {
+impl AsyncRead for &TcpStream {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.reactor.wait_for(self.input.subscribe()).await;
+        Reactor::current().wait_for(self.input.subscribe()).await;
         let slice = self.input.read(buf.len() as u64).map_err(to_io_err)?;
         let bytes_read = slice.len();
         buf[..bytes_read].clone_from_slice(&slice);
@@ -49,9 +48,9 @@ impl<'a> AsyncRead for &TcpStream<'a> {
     }
 }
 
-impl<'a> AsyncWrite for TcpStream<'a> {
+impl AsyncWrite for TcpStream {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.reactor.wait_for(self.output.subscribe()).await;
+        Reactor::current().wait_for(self.output.subscribe()).await;
         self.output.write(buf).map_err(to_io_err)?;
         Ok(buf.len())
     }
@@ -61,9 +60,9 @@ impl<'a> AsyncWrite for TcpStream<'a> {
     }
 }
 
-impl<'a> AsyncWrite for &TcpStream<'a> {
+impl AsyncWrite for &TcpStream {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.reactor.wait_for(self.output.subscribe()).await;
+        Reactor::current().wait_for(self.output.subscribe()).await;
         self.output.write(buf).map_err(to_io_err)?;
         Ok(buf.len())
     }
