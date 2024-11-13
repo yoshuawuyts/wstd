@@ -1,4 +1,7 @@
-use super::polling::{EventKey, Poller};
+use super::{
+    polling::{EventKey, Poller},
+    REACTOR,
+};
 
 use core::cell::RefCell;
 use core::future;
@@ -23,6 +26,19 @@ struct InnerReactor {
 }
 
 impl Reactor {
+    /// Return a `Reactor` for the currently running `wstd::runtime::block_on`.
+    ///
+    /// # Panic
+    /// This will panic if called outside of `wstd::runtime::block_on`.
+    pub fn current() -> Self {
+        REACTOR.with(|r| {
+            r.borrow()
+                .as_ref()
+                .expect("Reactor::current must be called within a wstd runtime")
+                .clone()
+        })
+    }
+
     /// Create a new instance of `Reactor`
     pub(crate) fn new() -> Self {
         Self {

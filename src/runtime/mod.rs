@@ -1,8 +1,8 @@
 //! Async event loop support.
 //!
-//! The way to use this is to call [`block_on()`] to obtain an instance of
-//! [`Reactor`]. You can then share the reactor in code that needs it to insert
-//! instances of
+//! The way to use this is to call [`block_on()`]. Inside the future, [`Reactor::current`]
+//! will give an instance of the [`Reactor`] running the event loop, which can be
+//! to [`Reactor::wait_for`] instances of
 //! [`wasi::Pollable`](https://docs.rs/wasi/latest/wasi/io/poll/struct.Pollable.html).
 //! This will automatically wait for the futures to resolve, and call the
 //! necessary wakers to work.
@@ -16,3 +16,10 @@ mod reactor;
 
 pub use block_on::block_on;
 pub use reactor::Reactor;
+use std::cell::RefCell;
+
+// There are no threads in WASI 0.2, so this is just a safe way to thread a single reactor to all
+// use sites in the background.
+std::thread_local! {
+pub(crate) static REACTOR: RefCell<Option<Reactor>> = RefCell::new(None);
+}

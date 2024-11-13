@@ -1,4 +1,4 @@
-use super::Reactor;
+use super::{Reactor, REACTOR};
 
 use core::future::Future;
 use core::pin::pin;
@@ -7,16 +7,19 @@ use core::task::Waker;
 use core::task::{Context, Poll, RawWaker, RawWakerVTable};
 
 /// Start the event loop
-pub fn block_on<F, Fut>(f: F) -> Fut::Output
+pub fn block_on<Fut>(fut: Fut) -> Fut::Output
 where
-    F: FnOnce(Reactor) -> Fut,
     Fut: Future,
 {
     // Construct the reactor
     let reactor = Reactor::new();
+    // Store a copy as a singleton to be used elsewhere:
+    let prev = REACTOR.replace(Some(reactor.clone()));
+    if prev.is_some() {
+        panic!("cannot wstd::runtime::block_on inside an existing block_on!")
+    }
 
-    // Create the future and pin it so it can be polled
-    let fut = (f)(reactor.clone());
+    // Pin the future so it can be polled
     let mut fut = pin!(fut);
 
     // Create a new context to be passed to the future.
@@ -25,12 +28,15 @@ where
 
     // Either the future completes and we return, or some IO is happening
     // and we wait.
-    loop {
+    let res = loop {
         match fut.as_mut().poll(&mut cx) {
-            Poll::Ready(res) => return res,
+            Poll::Ready(res) => break res,
             Poll::Pending => reactor.block_until(),
         }
-    }
+    };
+    // Clear the singleton
+    REACTOR.replace(None);
+    res
 }
 
 /// Construct a new no-op waker
