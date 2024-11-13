@@ -6,6 +6,7 @@ use super::{response::IncomingBody, Body, Request, Response, Result};
 use crate::runtime::Reactor;
 
 /// An HTTP client.
+// Empty for now, but permits adding support for RequestOptions soon:
 #[derive(Debug)]
 pub struct Client {}
 
