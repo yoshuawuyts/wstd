@@ -1,13 +1,12 @@
 [package]
 name = "wstd"
 version = "0.4.0"
-license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
+license.workspace = true
 repository = "https://github.com/yoshuawuyts/wstd"
 documentation = "https://docs.rs/wstd"
 description = "An async standard library for Wasm Components and WASI 0.2"
 readme = "README.md"
-edition = "2021"
-resolver = "2"
+edition.workspace = true
 keywords = ["WebAssembly", "async", "stdlib", "Components"]
 categories = []
 authors = [
@@ -17,8 +16,32 @@ authors = [
 [features]
 
 [dependencies]
-slab = "0.4.9"
-url = "2.5.0"
-wasi = "0.13.1"
+slab.workspace = true
+url.workspace = true
+wasi.workspace = true
 
 [dev-dependencies]
+test-program-suite.workspace = true
+wasmtime.workspace = true
+
+[workspace]
+members = [
+    "test-programs",
+    "test-programs/suite",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
+
+[workspace.dependencies]
+cargo_metadata = "0.18.1"
+heck = "0.5"
+slab = "0.4.9"
+test-programs = { path = "test-programs" }
+test-program-suite = { path = "test-programs/suite" }
+url = "2.5.0"
+wasi = "0.13.1"
+wstd = { path = "." }
+wasmtime = "26"
