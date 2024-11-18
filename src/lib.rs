@@ -12,7 +12,7 @@
 //!
 //! **TCP echo server**
 //!
-//! ```rust
+//! ```rust,no_run
 //! use wstd::io;
 //! use wstd::iter::AsyncIterator;
 //! use wstd::net::TcpListener;
