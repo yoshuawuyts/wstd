@@ -21,8 +21,11 @@ url.workspace = true
 wasi.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
 test-program-suite.workspace = true
 wasmtime.workspace = true
+wasmtime-wasi.workspace = true
+wasmtime-wasi-http.workspace = true
 
 [workspace]
 members = [
@@ -36,6 +39,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
 
 [workspace.dependencies]
+anyhow = "1"
 cargo_metadata = "0.18.1"
 heck = "0.5"
 slab = "0.4.9"
@@ -45,3 +49,5 @@ url = "2.5.0"
 wasi = "0.13.1"
 wstd = { path = "." }
 wasmtime = "26"
+wasmtime-wasi = "26"
+wasmtime-wasi-http = "26"
