@@ -59,8 +59,8 @@ use wstd::net::TcpListener;
 use wstd::runtime::block_on;
 
 fn main() -> io::Result<()> {
-    block_on(|reactor| async move {
-        let listener = TcpListener::bind(&reactor, "127.0.0.1:8080").await?;
+    block_on(async move {
+        let listener = TcpListener::bind("127.0.0.1:8080").await?;
         println!("Listening on {}", listener.local_addr()?);
         println!("type `nc localhost 8080` to create a TCP client");
 

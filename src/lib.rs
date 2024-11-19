@@ -19,8 +19,8 @@
 //! use wstd::runtime::block_on;
 //!
 //! fn main() -> io::Result<()> {
-//!     block_on(|reactor| async move {
-//!         let listener = TcpListener::bind(&reactor, "127.0.0.1:8080").await?;
+//!     block_on(async move {
+//!         let listener = TcpListener::bind("127.0.0.1:8080").await?;
 //!         println!("Listening on {}", listener.local_addr()?);
 //!         println!("type `nc localhost 8080` to create a TCP client");
 //!
@@ -56,12 +56,6 @@
 //! bytes. And `wstd::runtime` provides access to async runtime primitives.
 //! These are unique capabilities provided by WASI 0.2, and because this library
 //! is specific to that are exposed from here.
-//!
-//! Finally, this library does not implicitly thread through a
-//! [`Reactor`][runtime::Reactor] handle. Rather than using a `thread_local!`
-//! async resource APIs in `wstd` will borrow an instance of `Reactor`. This is
-//! a little more verbose, but in turn is a little simpler to implement,
-//! maintain, and extend.
 
 pub mod http;
 pub mod io;
