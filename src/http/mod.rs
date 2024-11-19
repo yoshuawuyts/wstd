@@ -6,13 +6,13 @@ pub use http::uri::Uri;
 pub use body::{Body, IntoBody};
 pub use client::Client;
 pub use error::{Error, Result};
-pub use fields::{FieldName, FieldValue, Fields, Headers, Trailers};
+pub use fields::{HeaderMap, HeaderName, HeaderValue};
 pub use method::Method;
 pub use request::Request;
 pub use response::Response;
 pub use status_code::StatusCode;
 
-pub(crate) use fields::fields_from_wasi;
+pub(crate) use fields::header_map_from_wasi;
 
 pub mod body;
 
