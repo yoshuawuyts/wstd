@@ -1,7 +1,7 @@
 use crate::io::{empty, Empty};
 
 use super::{Body, IntoBody, Method};
-use url::Url;
+use http::uri::Uri;
 use wasi::http::outgoing_handler::OutgoingRequest;
 use wasi::http::types::{Headers as WasiHeaders, Scheme};
 
@@ -9,18 +9,18 @@ use wasi::http::types::{Headers as WasiHeaders, Scheme};
 #[derive(Debug)]
 pub struct Request<B: Body> {
     method: Method,
-    url: Url,
+    uri: Uri,
     headers: WasiHeaders,
     body: B,
 }
 
 impl Request<Empty> {
     /// Create a new HTTP request to send off to the client.
-    pub fn new(method: Method, url: Url) -> Self {
+    pub fn new(method: Method, uri: Uri) -> Self {
         Self {
             body: empty(),
             method,
-            url,
+            uri,
             headers: WasiHeaders::new(),
         }
     }
@@ -31,42 +31,47 @@ impl<B: Body> Request<B> {
     pub fn set_body<C: IntoBody>(self, body: C) -> Request<C::IntoBody> {
         let Self {
             method,
-            url,
+            uri,
             headers,
             ..
         } = self;
         Request {
             method,
-            url,
+            uri,
             headers,
             body: body.into_body(),
         }
     }
 
-    pub fn into_outgoing(self) -> (OutgoingRequest, B) {
+    pub(crate) fn into_outgoing(self) -> (OutgoingRequest, B) {
         let wasi_req = OutgoingRequest::new(self.headers);
 
         // Set the HTTP method
-        wasi_req.set_method(&self.method.into()).unwrap();
+        wasi_req
+            .set_method(&self.method.into())
+            .expect("method accepted by wasi-http implementation");
 
         // Set the url scheme
-        let scheme = match self.url.scheme() {
-            "http" => Scheme::Http,
-            "https" => Scheme::Https,
-            other => Scheme::Other(other.to_owned()),
+        let scheme = match self.uri.scheme().map(|s| s.as_str()) {
+            Some("http") => Scheme::Http,
+            Some("https") | None => Scheme::Https,
+            Some(other) => Scheme::Other(other.to_owned()),
         };
-        wasi_req.set_scheme(Some(&scheme)).unwrap();
+        wasi_req
+            .set_scheme(Some(&scheme))
+            .expect("scheme accepted by wasi-http implementation");
+
+        // Set authority
+        wasi_req
+            .set_authority(self.uri.authority().map(|a| a.as_str()))
+            .expect("authority accepted by wasi-http implementation");
 
         // Set the url path + query string
-        let path = match self.url.query() {
-            Some(query) => format!("{}?{query}", self.url.path()),
-            None => self.url.path().to_owned(),
-        };
-        wasi_req.set_path_with_query(Some(&path)).unwrap();
-
-        // Not sure why we also have to set the authority, but sure we can do
-        // that too!
-        wasi_req.set_authority(Some(self.url.authority())).unwrap();
+        if let Some(p_and_q) = self.uri.path_and_query() {
+            wasi_req
+                .set_path_with_query(Some(&p_and_q.to_string()))
+                .expect("path with query accepted by wasi-http implementation")
+        }
 
         // All done; request is ready for send-off
         (wasi_req, self.body)

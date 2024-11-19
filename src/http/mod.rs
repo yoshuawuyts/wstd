@@ -1,6 +1,6 @@
 //! HTTP networking support
 
-pub use url::Url;
+pub use http::uri::Uri;
 
 #[doc(inline)]
 pub use body::{Body, IntoBody};

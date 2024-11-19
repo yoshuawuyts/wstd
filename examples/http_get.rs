@@ -1,10 +1,10 @@
 use std::error::Error;
-use wstd::http::{Client, Method, Request, Url};
+use wstd::http::{Client, Method, Request};
 use wstd::io::AsyncRead;
 
 #[wstd::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let request = Request::new(Method::Get, Url::parse("https://postman-echo.com/get")?);
+    let request = Request::new(Method::Get, "https://postman-echo.com/get".parse()?);
     let mut response = Client::new().send(request).await?;
 
     let content_type = response
