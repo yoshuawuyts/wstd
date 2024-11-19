@@ -23,7 +23,7 @@ wasi.workspace = true
 [dev-dependencies]
 anyhow.workspace = true
 serde_json.workspace = true
-test-program-suite.workspace = true
+test-programs-artifacts.workspace = true
 wasmtime.workspace = true
 wasmtime-wasi.workspace = true
 wasmtime-wasi-http.workspace = true
@@ -31,7 +31,7 @@ wasmtime-wasi-http.workspace = true
 [workspace]
 members = [
     "test-programs",
-    "test-programs/suite",
+    "test-programs/artifacts",
 ]
 resolver = "2"
 
@@ -46,7 +46,7 @@ heck = "0.5"
 serde_json = "1"
 slab = "0.4.9"
 test-programs = { path = "test-programs" }
-test-program-suite = { path = "test-programs/suite" }
+test-programs-artifacts = { path = "test-programs/artifacts" }
 url = "2.5.0"
 wasi = "0.13.1"
 wstd = { path = "." }

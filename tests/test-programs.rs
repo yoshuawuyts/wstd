@@ -81,8 +81,8 @@ fn tcp_echo_server() -> Result<()> {
     use std::thread::sleep;
     use std::time::Duration;
 
-    println!("testing {}", test_program_suite::TCP_ECHO_SERVER);
-    let wasm = std::fs::read(test_program_suite::TCP_ECHO_SERVER).context("read wasm")?;
+    println!("testing {}", test_programs_artifacts::TCP_ECHO_SERVER);
+    let wasm = std::fs::read(test_programs_artifacts::TCP_ECHO_SERVER).context("read wasm")?;
 
     let pipe = wasmtime_wasi::pipe::MemoryOutputPipe::new(1024 * 1024);
     let write_end = pipe.clone();
@@ -122,8 +122,8 @@ fn tcp_echo_server() -> Result<()> {
 
 #[test]
 fn http_get() -> Result<()> {
-    println!("testing {}", test_program_suite::HTTP_GET);
-    let wasm = std::fs::read(test_program_suite::HTTP_GET).context("read wasm")?;
+    println!("testing {}", test_programs_artifacts::HTTP_GET);
+    let wasm = std::fs::read(test_programs_artifacts::HTTP_GET).context("read wasm")?;
 
     run_in_wasmtime(&wasm, None)
 }
