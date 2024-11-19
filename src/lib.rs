@@ -16,6 +16,12 @@
 #![doc = include_str!("../examples/tcp_echo_server.rs")]
 //! ```
 //!
+//! **HTTP Client**
+//!
+//! ```rust,no_run
+#![doc = include_str!("../examples/http_get.rs")]
+//! ```
+//!
 //! # Design Decisions
 //!
 //! This library is entirely self-contained. This means that it does not share
