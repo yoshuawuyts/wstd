@@ -1,10 +1,14 @@
 use std::error::Error;
-use wstd::http::{Client, Method, Request};
+use wstd::http::{Client, HeaderValue, Method, Request};
 use wstd::io::AsyncRead;
 
 #[wstd::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let request = Request::new(Method::GET, "https://postman-echo.com/get".parse()?);
+    let mut request = Request::new(Method::GET, "https://postman-echo.com/get".parse()?);
+    request
+        .headers_mut()
+        .insert("my-header", HeaderValue::from_str("my-value")?);
+
     let mut response = Client::new().send(request).await?;
 
     let content_type = response
@@ -27,6 +31,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     assert!(
         body_url.contains("postman-echo.com/get"),
         "expected body url to contain the authority and path, got: {body_url}"
+    );
+
+    assert_eq!(
+        val.get("headers")
+            .ok_or_else(|| "body json has headers")?
+            .get("my-header")
+            .ok_or_else(|| "headers contains my-header")?
+            .as_str()
+            .ok_or_else(|| "my-header is a str")?,
+        "my-value"
     );
 
     Ok(())
