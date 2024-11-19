@@ -26,6 +26,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ matrix.rust }}
+        target: wasm32-wasip2
         override: true
 
     - name: check
