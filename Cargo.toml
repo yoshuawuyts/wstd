@@ -1,6 +1,6 @@
 [package]
 name = "wstd"
-version = "0.4.0"
+version.workspace = true
 license.workspace = true
 repository = "https://github.com/yoshuawuyts/wstd"
 documentation = "https://docs.rs/wstd"
@@ -19,6 +19,7 @@ authors = [
 slab.workspace = true
 url.workspace = true
 wasi.workspace = true
+wstd-macro.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
@@ -30,12 +31,14 @@ wasmtime-wasi-http.workspace = true
 
 [workspace]
 members = [
+    "macro",
     "test-programs",
     "test-programs/artifacts",
 ]
 resolver = "2"
 
 [workspace.package]
+version = "0.4.0"
 edition = "2021"
 license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
 
@@ -43,13 +46,16 @@ license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
 anyhow = "1"
 cargo_metadata = "0.18.1"
 heck = "0.5"
+quote = "1.0"
 serde_json = "1"
 slab = "0.4.9"
+syn = "2.0"
 test-programs = { path = "test-programs" }
 test-programs-artifacts = { path = "test-programs/artifacts" }
 url = "2.5.0"
 wasi = "0.13.1"
-wstd = { path = "." }
 wasmtime = "26"
 wasmtime-wasi = "26"
 wasmtime-wasi-http = "26"
+wstd = { path = "." }
+wstd-macro = { path = "macro" }

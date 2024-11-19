@@ -51,3 +51,5 @@ pub mod net;
 pub mod rand;
 pub mod runtime;
 pub mod time;
+
+pub use wstd_macro::attr_macro_main as main;
