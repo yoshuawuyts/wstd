@@ -1,7 +1,7 @@
 use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
-use super::{Body, Headers, StatusCode};
+use super::{fields_from_wasi, Body, Headers, StatusCode};
 use crate::io::AsyncRead;
 use crate::runtime::Reactor;
 
@@ -46,7 +46,7 @@ pub struct Response<B: Body> {
 
 impl Response<IncomingBody> {
     pub(crate) fn try_from_incoming_response(incoming: IncomingResponse) -> super::Result<Self> {
-        let headers: Headers = incoming.headers().into();
+        let headers: Headers = fields_from_wasi(incoming.headers())?;
         let status = incoming.status().into();
 
         // `body_stream` is a child of `incoming_body` which means we cannot

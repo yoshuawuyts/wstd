@@ -9,10 +9,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let content_type = response
         .headers()
-        .get(&"content-type".into())
-        .ok_or_else(|| "response expected to have content-type header")?;
-    assert_eq!(content_type.len(), 1, "one header value for content-type");
-    assert_eq!(content_type[0], b"application/json; charset=utf-8");
+        .get("Content-Type")
+        .ok_or_else(|| "response expected to have Content-Type header")?;
+    assert_eq!(content_type, "application/json; charset=utf-8");
 
     // Would much prefer read_to_end here:
     let mut body_buf = vec![0; 4096];

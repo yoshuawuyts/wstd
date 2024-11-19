@@ -1,5 +1,5 @@
 //! HTTP networking support
-
+//!
 pub use http::uri::Uri;
 
 #[doc(inline)]
@@ -11,6 +11,8 @@ pub use method::Method;
 pub use request::Request;
 pub use response::Response;
 pub use status_code::StatusCode;
+
+pub(crate) use fields::fields_from_wasi;
 
 pub mod body;
 
