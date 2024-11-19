@@ -1,6 +1,9 @@
 use crate::io::{empty, Empty};
 
-use super::{header_map_to_wasi, Body, Error, HeaderMap, IntoBody, Method, Result};
+use super::{
+    fields::header_map_to_wasi, method::to_wasi_method, Body, Error, HeaderMap, IntoBody, Method,
+    Result,
+};
 use http::uri::Uri;
 use wasi::http::outgoing_handler::OutgoingRequest;
 use wasi::http::types::Scheme;
@@ -57,7 +60,7 @@ impl<B: Body> Request<B> {
         let wasi_req = OutgoingRequest::new(header_map_to_wasi(&self.headers)?);
 
         // Set the HTTP method
-        let method = self.method.into();
+        let method = to_wasi_method(self.method);
         wasi_req
             .set_method(&method)
             .map_err(|()| Error::other(format!("method rejected by wasi-http: {method:?}",)))?;

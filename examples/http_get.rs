@@ -4,7 +4,7 @@ use wstd::io::AsyncRead;
 
 #[wstd::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let request = Request::new(Method::Get, "https://postman-echo.com/get".parse()?);
+    let request = Request::new(Method::GET, "https://postman-echo.com/get".parse()?);
     let mut response = Client::new().send(request).await?;
 
     let content_type = response

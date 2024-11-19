@@ -12,8 +12,6 @@ pub use request::Request;
 pub use response::Response;
 pub use status_code::StatusCode;
 
-pub(crate) use fields::{header_map_from_wasi, header_map_to_wasi};
-
 pub mod body;
 
 mod client;

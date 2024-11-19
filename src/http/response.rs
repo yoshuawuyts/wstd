@@ -1,7 +1,7 @@
 use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
-use super::{header_map_from_wasi, Body, HeaderMap, StatusCode};
+use super::{fields::header_map_from_wasi, Body, HeaderMap, StatusCode};
 use crate::io::AsyncRead;
 use crate::runtime::Reactor;
 

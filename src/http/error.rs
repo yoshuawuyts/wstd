@@ -19,6 +19,7 @@ impl fmt::Debug for Error {
             ErrorVariant::WasiHeader(e) => write!(f, "wasi header error: {e:?}"),
             ErrorVariant::HeaderName(e) => write!(f, "header name error: {e:?}"),
             ErrorVariant::HeaderValue(e) => write!(f, "header value error: {e:?}"),
+            ErrorVariant::Method(e) => write!(f, "method error: {e:?}"),
             ErrorVariant::Other(e) => write!(f, "{e}"),
         }
     }
@@ -31,6 +32,7 @@ impl fmt::Display for Error {
             ErrorVariant::WasiHeader(e) => write!(f, "wasi header error: {e}"),
             ErrorVariant::HeaderName(e) => write!(f, "header name error: {e}"),
             ErrorVariant::HeaderValue(e) => write!(f, "header value error: {e}"),
+            ErrorVariant::Method(e) => write!(f, "method error: {e}"),
             ErrorVariant::Other(e) => write!(f, "{e}"),
         }
     }
@@ -85,11 +87,18 @@ impl From<http::header::InvalidHeaderName> for Error {
     }
 }
 
+impl From<http::method::InvalidMethod> for Error {
+    fn from(e: http::method::InvalidMethod) -> Error {
+        ErrorVariant::Method(e).into()
+    }
+}
+
 #[derive(Debug)]
 pub enum ErrorVariant {
     WasiHttp(wasi::http::types::ErrorCode),
     WasiHeader(wasi::http::types::HeaderError),
     HeaderName(http::header::InvalidHeaderName),
     HeaderValue(http::header::InvalidHeaderValue),
+    Method(http::method::InvalidMethod),
     Other(String),
 }

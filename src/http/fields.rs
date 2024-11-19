@@ -15,7 +15,6 @@ pub(crate) fn header_map_from_wasi(wasi_fields: Fields) -> Result<HeaderMap> {
     Ok(output)
 }
 
-#[allow(dead_code)]
 pub(crate) fn header_map_to_wasi(header_map: &HeaderMap) -> Result<Fields> {
     let wasi_fields = Fields::new();
     for (key, value) in header_map {
