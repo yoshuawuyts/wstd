@@ -1,0 +1,12 @@
+[package]
+name = "wstd-macro"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { workspace = true, features = ["full"] }
+quote.workspace = true
