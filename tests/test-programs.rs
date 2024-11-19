@@ -3,7 +3,7 @@ use wasmtime::{
     component::{Component, Linker, ResourceTable},
     Config, Engine, Store,
 };
-use wasmtime_wasi::{StdoutStream, WasiCtx, WasiView};
+use wasmtime_wasi::{pipe::MemoryOutputPipe, WasiCtx, WasiView};
 use wasmtime_wasi_http::{WasiHttpCtx, WasiHttpView};
 
 struct Ctx {
@@ -30,7 +30,7 @@ impl WasiHttpView for Ctx {
     }
 }
 
-fn run_in_wasmtime(wasm: &[u8], stdout: impl StdoutStream + 'static) -> Result<()> {
+fn run_in_wasmtime(wasm: &[u8], stdout: Option<MemoryOutputPipe>) -> Result<()> {
     let config = Config::default();
     let engine = Engine::new(&config).context("creating engine")?;
     let component = Component::new(&engine, wasm).context("loading component")?;
@@ -40,15 +40,17 @@ fn run_in_wasmtime(wasm: &[u8], stdout: impl StdoutStream + 'static) -> Result<(
     wasmtime_wasi_http::add_only_http_to_linker_sync(&mut linker)
         .context("add wasi-http to linker")?;
 
+    let mut builder = WasiCtx::builder();
+    builder.inherit_stderr().inherit_network();
+    let wasi = match stdout {
+        Some(stdout) => builder.stdout(stdout).build(),
+        None => builder.inherit_stdout().build(),
+    };
     let mut store = Store::new(
         &engine,
         Ctx {
             table: ResourceTable::new(),
-            wasi: WasiCtx::builder()
-                .stdout(stdout)
-                .inherit_stderr()
-                .inherit_network()
-                .build(),
+            wasi,
             http: WasiHttpCtx::new(),
         },
     );
@@ -84,7 +86,7 @@ fn tcp_echo_server() -> Result<()> {
 
     let pipe = wasmtime_wasi::pipe::MemoryOutputPipe::new(1024 * 1024);
     let write_end = pipe.clone();
-    let wasmtime_thread = std::thread::spawn(move || run_in_wasmtime(&wasm, write_end));
+    let wasmtime_thread = std::thread::spawn(move || run_in_wasmtime(&wasm, Some(write_end)));
 
     'wait: loop {
         sleep(Duration::from_millis(100));
@@ -116,4 +118,12 @@ fn tcp_echo_server() -> Result<()> {
         wasmtime_thread.join().expect("wasmtime panicked")?;
     }
     Ok(())
+}
+
+#[test]
+fn http_get() -> Result<()> {
+    println!("testing {}", test_program_suite::HTTP_GET);
+    let wasm = std::fs::read(test_program_suite::HTTP_GET).context("read wasm")?;
+
+    run_in_wasmtime(&wasm, None)
 }
