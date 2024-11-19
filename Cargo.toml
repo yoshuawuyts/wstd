@@ -1,13 +1,12 @@
 [package]
 name = "wstd"
-version = "0.4.0"
-license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
+version.workspace = true
+license.workspace = true
 repository = "https://github.com/yoshuawuyts/wstd"
 documentation = "https://docs.rs/wstd"
 description = "An async standard library for Wasm Components and WASI 0.2"
 readme = "README.md"
-edition = "2021"
-resolver = "2"
+edition.workspace = true
 keywords = ["WebAssembly", "async", "stdlib", "Components"]
 categories = []
 authors = [
@@ -17,8 +16,46 @@ authors = [
 [features]
 
 [dependencies]
-slab = "0.4.9"
-url = "2.5.0"
-wasi = "0.13.1"
+slab.workspace = true
+url.workspace = true
+wasi.workspace = true
+wstd-macro.workspace = true
 
 [dev-dependencies]
+anyhow.workspace = true
+serde_json.workspace = true
+test-programs-artifacts.workspace = true
+wasmtime.workspace = true
+wasmtime-wasi.workspace = true
+wasmtime-wasi-http.workspace = true
+
+[workspace]
+members = [
+    "macro",
+    "test-programs",
+    "test-programs/artifacts",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.4.0"
+edition = "2021"
+license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
+
+[workspace.dependencies]
+anyhow = "1"
+cargo_metadata = "0.18.1"
+heck = "0.5"
+quote = "1.0"
+serde_json = "1"
+slab = "0.4.9"
+syn = "2.0"
+test-programs = { path = "test-programs" }
+test-programs-artifacts = { path = "test-programs/artifacts" }
+url = "2.5.0"
+wasi = "0.13.1"
+wasmtime = "26"
+wasmtime-wasi = "26"
+wasmtime-wasi-http = "26"
+wstd = { path = "." }
+wstd-macro = { path = "macro" }
