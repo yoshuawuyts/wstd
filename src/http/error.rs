@@ -19,6 +19,7 @@ impl fmt::Debug for Error {
             ErrorVariant::WasiHeader(e) => write!(f, "wasi header error: {e:?}"),
             ErrorVariant::HeaderName(e) => write!(f, "header name error: {e:?}"),
             ErrorVariant::HeaderValue(e) => write!(f, "header value error: {e:?}"),
+            ErrorVariant::Other(e) => write!(f, "{e}"),
         }
     }
 }
@@ -30,6 +31,7 @@ impl fmt::Display for Error {
             ErrorVariant::WasiHeader(e) => write!(f, "wasi header error: {e}"),
             ErrorVariant::HeaderName(e) => write!(f, "header name error: {e}"),
             ErrorVariant::HeaderValue(e) => write!(f, "header value error: {e}"),
+            ErrorVariant::Other(e) => write!(f, "{e}"),
         }
     }
 }
@@ -37,6 +39,9 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 impl Error {
+    pub(crate) fn other(s: impl Into<String>) -> Self {
+        ErrorVariant::Other(s.into()).into()
+    }
     pub(crate) fn context(self, s: impl Into<String>) -> Self {
         let mut context = self.context;
         context.push(s.into());
@@ -86,4 +91,5 @@ pub enum ErrorVariant {
     WasiHeader(wasi::http::types::HeaderError),
     HeaderName(http::header::InvalidHeaderName),
     HeaderValue(http::header::InvalidHeaderValue),
+    Other(String),
 }
