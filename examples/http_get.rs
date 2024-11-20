@@ -17,10 +17,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .ok_or_else(|| "response expected to have Content-Type header")?;
     assert_eq!(content_type, "application/json; charset=utf-8");
 
-    // Would much prefer read_to_end here:
-    let mut body_buf = vec![0; 4096];
-    let body_len = response.body().read(&mut body_buf).await?;
-    body_buf.truncate(body_len);
+    let mut body_buf = Vec::new();
+    let _body_len = response.body().read_to_end(&mut body_buf).await?;
 
     let val: serde_json::Value = serde_json::from_slice(&body_buf)?;
     let body_url = val

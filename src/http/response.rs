@@ -101,8 +101,8 @@ pub struct IncomingBody {
     // How many bytes have we already read from the buf?
     buf_offset: usize,
 
-    // IMPORTANT: the order of these fields here matters. `incoming_body` must
-    // be dropped before `body_stream`.
+    // IMPORTANT: the order of these fields here matters. `body_stream` must
+    // be dropped before `_incoming_body`.
     body_stream: InputStream,
     _incoming_body: WasiIncomingBody,
 }
@@ -117,12 +117,16 @@ impl AsyncRead for IncomingBody {
                 Reactor::current().wait_for(pollable).await;
 
                 // Read the bytes from the body stream
-                let buf = self.body_stream.read(CHUNK_SIZE).map_err(|err| match err {
-                    StreamError::LastOperationFailed(err) => {
-                        std::io::Error::other(format!("{}", err.to_debug_string()))
+                let buf = match self.body_stream.read(CHUNK_SIZE) {
+                    Ok(buf) => buf,
+                    Err(StreamError::Closed) => return Ok(0),
+                    Err(StreamError::LastOperationFailed(err)) => {
+                        return Err(std::io::Error::other(format!(
+                            "last operation failed: {}",
+                            err.to_debug_string()
+                        )))
                     }
-                    StreamError::Closed => std::io::Error::other("Connection closed"),
-                })?;
+                };
                 self.buf.insert(buf)
             }
         };
