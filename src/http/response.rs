@@ -1,7 +1,7 @@
 use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
-use super::{Body, Headers, StatusCode};
+use super::{fields::header_map_from_wasi, Body, HeaderMap, StatusCode};
 use crate::io::AsyncRead;
 use crate::runtime::Reactor;
 
@@ -11,7 +11,7 @@ const CHUNK_SIZE: u64 = 2048;
 /// An HTTP response
 #[derive(Debug)]
 pub struct Response<B: Body> {
-    headers: Headers,
+    headers: HeaderMap,
     status: StatusCode,
     body: B,
 }
@@ -46,7 +46,7 @@ pub struct Response<B: Body> {
 
 impl Response<IncomingBody> {
     pub(crate) fn try_from_incoming_response(incoming: IncomingResponse) -> super::Result<Self> {
-        let headers: Headers = incoming.headers().into();
+        let headers: HeaderMap = header_map_from_wasi(incoming.headers())?;
         let status = incoming.status().into();
 
         // `body_stream` is a child of `incoming_body` which means we cannot
@@ -80,12 +80,12 @@ impl<B: Body> Response<B> {
     }
 
     /// Get the HTTP headers from the impl
-    pub fn headers(&self) -> &Headers {
+    pub fn headers(&self) -> &HeaderMap {
         &self.headers
     }
 
     /// Mutably get the HTTP headers from the impl
-    pub fn headers_mut(&mut self) -> &mut Headers {
+    pub fn headers_mut(&mut self) -> &mut HeaderMap {
         &mut self.headers
     }
 

@@ -16,8 +16,8 @@ authors = [
 [features]
 
 [dependencies]
+http.workspace = true
 slab.workspace = true
-url.workspace = true
 wasi.workspace = true
 wstd-macro.workspace = true
 
@@ -46,13 +46,13 @@ license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
 anyhow = "1"
 cargo_metadata = "0.18.1"
 heck = "0.5"
+http = "1.1"
 quote = "1.0"
 serde_json = "1"
 slab = "0.4.9"
 syn = "2.0"
 test-programs = { path = "test-programs" }
 test-programs-artifacts = { path = "test-programs/artifacts" }
-url = "2.5.0"
 wasi = "0.13.1"
 wasmtime = "26"
 wasmtime-wasi = "26"

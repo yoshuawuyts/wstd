@@ -18,7 +18,7 @@ impl Client {
 
     /// Send an HTTP request.
     pub async fn send<B: Body>(&self, req: Request<B>) -> Result<Response<IncomingBody>> {
-        let (wasi_req, body) = req.into_outgoing();
+        let (wasi_req, body) = req.into_outgoing()?;
         let wasi_body = wasi_req.body().unwrap();
         let body_stream = wasi_body.write().unwrap();
 
