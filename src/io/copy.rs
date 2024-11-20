@@ -12,14 +12,6 @@ where
         if bytes_read == 0 {
             break 'read Ok(());
         }
-        let mut slice = &buf[0..bytes_read];
-
-        'write: loop {
-            let bytes_written = writer.write(slice).await?;
-            slice = &slice[bytes_written..];
-            if slice.is_empty() {
-                break 'write;
-            }
-        }
+        writer.write_all(&buf[0..bytes_read]).await?;
     }
 }
