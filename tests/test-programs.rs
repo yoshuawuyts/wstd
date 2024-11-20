@@ -124,6 +124,16 @@ fn tcp_echo_server() -> Result<()> {
 fn http_get() -> Result<()> {
     println!("testing {}", test_programs_artifacts::HTTP_GET);
     let wasm = std::fs::read(test_programs_artifacts::HTTP_GET).context("read wasm")?;
+    run_in_wasmtime(&wasm, None)
+}
 
+#[test]
+fn http_first_byte_timeout() -> Result<()> {
+    println!(
+        "testing {}",
+        test_programs_artifacts::HTTP_FIRST_BYTE_TIMEOUT
+    );
+    let wasm =
+        std::fs::read(test_programs_artifacts::HTTP_FIRST_BYTE_TIMEOUT).context("read wasm")?;
     run_in_wasmtime(&wasm, None)
 }

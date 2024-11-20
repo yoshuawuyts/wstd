@@ -15,7 +15,7 @@ pub use status_code::StatusCode;
 pub mod body;
 
 mod client;
-mod error;
+pub mod error;
 mod fields;
 mod method;
 mod request;
