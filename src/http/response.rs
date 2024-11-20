@@ -101,8 +101,8 @@ pub struct IncomingBody {
     // How many bytes have we already read from the buf?
     buf_offset: usize,
 
-    // IMPORTANT: the order of these fields here matters. `incoming_body` must
-    // be dropped before `body_stream`.
+    // IMPORTANT: the order of these fields here matters. `body_stream` must
+    // be dropped before `_incoming_body`.
     body_stream: InputStream,
     _incoming_body: WasiIncomingBody,
 }
