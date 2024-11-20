@@ -9,6 +9,10 @@ pub struct Error {
     context: Vec<String>,
 }
 
+pub use http::header::{InvalidHeaderName, InvalidHeaderValue};
+pub use http::method::InvalidMethod;
+pub use wasi::http::types::{ErrorCode as WasiHttpErrorCode, HeaderError as WasiHttpHeaderError};
+
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for c in self.context.iter() {
@@ -41,6 +45,9 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 impl Error {
+    pub fn variant(&self) -> &ErrorVariant {
+        &self.variant
+    }
     pub(crate) fn other(s: impl Into<String>) -> Self {
         ErrorVariant::Other(s.into()).into()
     }
@@ -63,42 +70,42 @@ impl From<ErrorVariant> for Error {
     }
 }
 
-impl From<wasi::http::types::ErrorCode> for Error {
-    fn from(e: wasi::http::types::ErrorCode) -> Error {
+impl From<WasiHttpErrorCode> for Error {
+    fn from(e: WasiHttpErrorCode) -> Error {
         ErrorVariant::WasiHttp(e).into()
     }
 }
 
-impl From<wasi::http::types::HeaderError> for Error {
-    fn from(e: wasi::http::types::HeaderError) -> Error {
+impl From<WasiHttpHeaderError> for Error {
+    fn from(e: WasiHttpHeaderError) -> Error {
         ErrorVariant::WasiHeader(e).into()
     }
 }
 
-impl From<http::header::InvalidHeaderValue> for Error {
-    fn from(e: http::header::InvalidHeaderValue) -> Error {
+impl From<InvalidHeaderValue> for Error {
+    fn from(e: InvalidHeaderValue) -> Error {
         ErrorVariant::HeaderValue(e).into()
     }
 }
 
-impl From<http::header::InvalidHeaderName> for Error {
-    fn from(e: http::header::InvalidHeaderName) -> Error {
+impl From<InvalidHeaderName> for Error {
+    fn from(e: InvalidHeaderName) -> Error {
         ErrorVariant::HeaderName(e).into()
     }
 }
 
-impl From<http::method::InvalidMethod> for Error {
-    fn from(e: http::method::InvalidMethod) -> Error {
+impl From<InvalidMethod> for Error {
+    fn from(e: InvalidMethod) -> Error {
         ErrorVariant::Method(e).into()
     }
 }
 
 #[derive(Debug)]
 pub enum ErrorVariant {
-    WasiHttp(wasi::http::types::ErrorCode),
-    WasiHeader(wasi::http::types::HeaderError),
-    HeaderName(http::header::InvalidHeaderName),
-    HeaderValue(http::header::InvalidHeaderValue),
-    Method(http::method::InvalidMethod),
+    WasiHttp(WasiHttpErrorCode),
+    WasiHeader(WasiHttpHeaderError),
+    HeaderName(InvalidHeaderName),
+    HeaderValue(InvalidHeaderValue),
+    Method(InvalidMethod),
     Other(String),
 }
