@@ -117,12 +117,16 @@ impl AsyncRead for IncomingBody {
                 Reactor::current().wait_for(pollable).await;
 
                 // Read the bytes from the body stream
-                let buf = self.body_stream.read(CHUNK_SIZE).map_err(|err| match err {
-                    StreamError::LastOperationFailed(err) => {
-                        std::io::Error::other(format!("{}", err.to_debug_string()))
+                let buf = match self.body_stream.read(CHUNK_SIZE) {
+                    Ok(buf) => buf,
+                    Err(StreamError::Closed) => return Ok(0),
+                    Err(StreamError::LastOperationFailed(err)) => {
+                        return Err(std::io::Error::other(format!(
+                            "last operation failed: {}",
+                            err.to_debug_string()
+                        )))
                     }
-                    StreamError::Closed => std::io::Error::other("Connection closed"),
-                })?;
+                };
                 self.buf.insert(buf)
             }
         };
