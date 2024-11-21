@@ -1,6 +1,6 @@
 //! HTTP body types
 
-use crate::io::{AsyncRead, Cursor};
+use crate::io::{AsyncRead, Cursor, Empty};
 
 pub use super::response::IncomingBody;
 
@@ -41,12 +41,24 @@ impl IntoBody for String {
     }
 }
 
-impl<T> Body for T
-where
-    T: AsyncRead,
-{
-    fn len(&self) -> Option<usize> {
-        None
+impl IntoBody for &str {
+    type IntoBody = BoundedBody<Vec<u8>>;
+    fn into_body(self) -> Self::IntoBody {
+        BoundedBody(Cursor::new(self.to_owned().into_bytes()))
+    }
+}
+
+impl IntoBody for Vec<u8> {
+    type IntoBody = BoundedBody<Vec<u8>>;
+    fn into_body(self) -> Self::IntoBody {
+        BoundedBody(Cursor::new(self))
+    }
+}
+
+impl IntoBody for &[u8] {
+    type IntoBody = BoundedBody<Vec<u8>>;
+    fn into_body(self) -> Self::IntoBody {
+        BoundedBody(Cursor::new(self.to_owned()))
     }
 }
 
@@ -57,5 +69,16 @@ pub struct BoundedBody<T>(Cursor<T>);
 impl<T: AsRef<[u8]>> AsyncRead for BoundedBody<T> {
     async fn read(&mut self, buf: &mut [u8]) -> crate::io::Result<usize> {
         self.0.read(buf).await
+    }
+}
+impl<T: AsRef<[u8]>> Body for BoundedBody<T> {
+    fn len(&self) -> Option<usize> {
+        Some(self.0.get_ref().as_ref().len())
+    }
+}
+
+impl Body for Empty {
+    fn len(&self) -> Option<usize> {
+        Some(0)
     }
 }
