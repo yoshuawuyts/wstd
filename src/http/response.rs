@@ -1,7 +1,7 @@
 use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 use wasi::io::streams::{InputStream, StreamError};
 
-use super::{fields::header_map_from_wasi, Body, HeaderMap, StatusCode};
+use super::{fields::header_map_from_wasi, Body, Error, HeaderMap, Result, StatusCode};
 use crate::io::AsyncRead;
 use crate::runtime::Reactor;
 
@@ -23,27 +23,29 @@ enum BodyKind {
 }
 
 impl BodyKind {
-    fn from_headers(headers: &HeaderMap) -> BodyKind {
+    fn from_headers(headers: &HeaderMap) -> Result<BodyKind> {
         if let Some(value) = headers.get("content-length") {
             let content_length = std::str::from_utf8(value.as_ref())
                 .unwrap()
                 .parse::<u64>()
-                .expect("content-length should be a u64; violates HTTP/1.1");
-            BodyKind::Fixed(content_length)
+                .map_err(|_| {
+                    Error::other("incoming content-length should be a u64; violates HTTP/1.1")
+                })?;
+            Ok(BodyKind::Fixed(content_length))
         } else if headers.contains_key("transfer-encoding") {
-            BodyKind::Chunked
+            Ok(BodyKind::Chunked)
         } else {
-            BodyKind::Chunked
+            Ok(BodyKind::Chunked)
         }
     }
 }
 
 impl Response<IncomingBody> {
-    pub(crate) fn try_from_incoming_response(incoming: IncomingResponse) -> super::Result<Self> {
+    pub(crate) fn try_from_incoming_response(incoming: IncomingResponse) -> Result<Self> {
         let headers: HeaderMap = header_map_from_wasi(incoming.headers())?;
         let status = incoming.status().into();
 
-        let kind = BodyKind::from_headers(&headers);
+        let kind = BodyKind::from_headers(&headers)?;
         // `body_stream` is a child of `incoming_body` which means we cannot
         // drop the parent before we drop the child
         let incoming_body = incoming
