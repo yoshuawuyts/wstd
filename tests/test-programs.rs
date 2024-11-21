@@ -128,6 +128,13 @@ fn http_get() -> Result<()> {
 }
 
 #[test]
+fn http_post() -> Result<()> {
+    println!("testing {}", test_programs_artifacts::HTTP_POST);
+    let wasm = std::fs::read(test_programs_artifacts::HTTP_POST).context("read wasm")?;
+    run_in_wasmtime(&wasm, None)
+}
+
+#[test]
 fn http_first_byte_timeout() -> Result<()> {
     println!(
         "testing {}",
