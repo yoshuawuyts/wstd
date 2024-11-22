@@ -1,6 +1,7 @@
-use crate::{future::IntoFuture, task::SleepUntil};
-
+use super::task::SleepUntil;
+use std::future::IntoFuture;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
+use wasi::clocks::monotonic_clock;
 
 use super::Duration;
 
@@ -11,7 +12,7 @@ use super::Duration;
 /// without coherence issues, just like if we were implementing this in the
 /// stdlib.
 #[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Hash, Clone, Copy)]
-pub struct Instant(pub(crate) std::time::Instant);
+pub struct Instant(pub(crate) monotonic_clock::Instant);
 
 impl Instant {
     /// Returns an instant corresponding to "now".
@@ -25,7 +26,7 @@ impl Instant {
     /// ```
     #[must_use]
     pub fn now() -> Self {
-        std::time::Instant::now().into()
+        Instant(wasi::clocks::monotonic_clock::now())
     }
 }
 
@@ -33,13 +34,13 @@ impl Add<Duration> for Instant {
     type Output = Self;
 
     fn add(self, rhs: Duration) -> Self::Output {
-        (self.0 + rhs.0).into()
+        Self(self.0 + rhs.0)
     }
 }
 
 impl AddAssign<Duration> for Instant {
     fn add_assign(&mut self, rhs: Duration) {
-        *self = (self.0 + rhs.0).into()
+        *self = Self(self.0 + rhs.0)
     }
 }
 
@@ -47,18 +48,18 @@ impl Sub<Duration> for Instant {
     type Output = Self;
 
     fn sub(self, rhs: Duration) -> Self::Output {
-        (self.0 - rhs.0).into()
+        Self(self.0 - rhs.0)
     }
 }
 
 impl SubAssign<Duration> for Instant {
     fn sub_assign(&mut self, rhs: Duration) {
-        *self = (self.0 - rhs.0).into()
+        *self = Self(self.0 - rhs.0)
     }
 }
 
 impl std::ops::Deref for Instant {
-    type Target = std::time::Instant;
+    type Target = monotonic_clock::Instant;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -71,24 +72,12 @@ impl std::ops::DerefMut for Instant {
     }
 }
 
-impl From<std::time::Instant> for Instant {
-    fn from(inner: std::time::Instant) -> Self {
-        Self(inner)
-    }
-}
-
-impl Into<std::time::Instant> for Instant {
-    fn into(self) -> std::time::Instant {
-        self.0
-    }
-}
-
 impl IntoFuture for Instant {
     type Output = Instant;
 
     type IntoFuture = SleepUntil;
 
     fn into_future(self) -> Self::IntoFuture {
-        crate::task::sleep_until(self)
+        super::task::sleep_until(self)
     }
 }

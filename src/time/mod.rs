@@ -1,48 +1,22 @@
 //! Async time interfaces.
+
+pub(crate) mod utils;
+
+mod duration;
+mod instant;
+pub use duration::Duration;
+pub use instant::Instant;
+
+pub mod future;
+pub mod stream;
+pub mod task;
+
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use wasi::clocks::{monotonic_clock::subscribe_instant, wall_clock};
-use wasi::clocks::{
-    monotonic_clock::{self, subscribe_duration, subscribe_instant},
-    wall_clock,
-};
 
 use crate::{iter::AsyncIterator, runtime::Reactor};
-
-/// A Duration type to represent a span of time, typically used for system
-/// timeouts.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Duration(monotonic_clock::Duration);
-
-impl Duration {
-    pub fn from_nanos(nanos: u64) -> Self {
-        Self(nanos)
-    }
-}
-
-impl From<std::time::Duration> for Duration {
-    fn from(std_dur: std::time::Duration) -> Duration {
-        Self::from_nanos(std_dur.as_nanos().try_into().unwrap_or(u64::MAX))
-    }
-}
-
-impl From<Duration> for std::time::Duration {
-    fn from(dur: Duration) -> std::time::Duration {
-        std::time::Duration::from_nanos(dur.0)
-    }
-}
-
-/// A measurement of a monotonically nondecreasing clock. Opaque and useful only
-/// with `Duration`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Instant(monotonic_clock::Instant);
-
-impl Instant {
-    pub fn now() -> Self {
-        Self(monotonic_clock::now())
-    }
-}
 
 /// A measurement of the system clock, useful for talking to external entities
 /// like the file system or other processes.
@@ -71,7 +45,7 @@ impl AsyncIterator for Interval {
     type Item = Instant;
 
     async fn next(&mut self) -> Option<Self::Item> {
-        Timer::after(self.duration).wait().await;
+        Timer::after(self.duration).await;
         Some(Instant::now())
     }
 }
