@@ -114,7 +114,7 @@ mod test {
             let expected = 2;
 
             let mut counter = 0;
-            crate::time::stream::interval(interval)
+            crate::stream::interval(interval)
                 .take(take)
                 .sample(throttle)
                 .for_each(|_| counter += 1)

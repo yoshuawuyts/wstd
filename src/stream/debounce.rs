@@ -5,7 +5,7 @@ use futures_core::ready;
 use futures_core::stream::Stream;
 use pin_project_lite::pin_project;
 
-use crate::time::future::Timer;
+use crate::future::Timer;
 
 pin_project! {
     /// Debounce the stream.
@@ -116,7 +116,7 @@ mod test {
             let debounce = Duration::from_millis(20);
 
             let mut counter = 0;
-            crate::time::stream::interval(interval)
+            crate::stream::interval(interval)
                 .take(10)
                 .debounce(debounce)
                 .for_each(|_| counter += 1)
@@ -133,7 +133,7 @@ mod test {
             let debounce = Duration::from_millis(10);
 
             let mut counter = 0;
-            crate::time::stream::interval(interval)
+            crate::stream::interval(interval)
                 .take(10)
                 .debounce(debounce)
                 .for_each(|_| counter += 1)
