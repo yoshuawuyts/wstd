@@ -1,5 +1,5 @@
-use crate::{future::IntoFuture, task::SleepUntil};
-
+use super::task::SleepUntil;
+use std::future::IntoFuture;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
 use super::Duration;
@@ -25,7 +25,7 @@ impl Instant {
     /// ```
     #[must_use]
     pub fn now() -> Self {
-        std::time::Instant::now().into()
+        std::time::Instant::from_nanos(wasi::clocks::monotonic_clock::now()).into()
     }
 }
 
@@ -89,6 +89,6 @@ impl IntoFuture for Instant {
     type IntoFuture = SleepUntil;
 
     fn into_future(self) -> Self::IntoFuture {
-        crate::task::sleep_until(self)
+        super::task::sleep_until(self)
     }
 }

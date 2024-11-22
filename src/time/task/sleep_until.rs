@@ -2,10 +2,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use crate::time::{Instant, Timer};
 use pin_project_lite::pin_project;
-use wstd::time::Timer;
-
-use crate::time::Instant;
 
 /// Sleeps until the specified instant.
 pub fn sleep_until(deadline: Instant) -> SleepUntil {

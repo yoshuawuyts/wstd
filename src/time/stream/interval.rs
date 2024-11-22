@@ -3,9 +3,8 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use futures_core::stream::Stream;
-use wstd::time::Timer;
 
-use crate::time::{Duration, Instant};
+use crate::time::{Duration, Instant, Timer};
 
 /// Creates a new stream that yields at a set interval.
 ///

@@ -15,7 +15,9 @@ authors = [
 [features]
 
 [dependencies]
+futures-core.workspace = true
 http.workspace = true
+pin-project-lite.workspace = true
 slab.workspace = true
 wasi.workspace = true
 wstd-macro.workspace = true
@@ -46,8 +48,10 @@ repository = "https://github.com/yoshuawuyts/wstd"
 [workspace.dependencies]
 anyhow = "1"
 cargo_metadata = "0.18.1"
+futures-core = "0.3.19"
 heck = "0.5"
 http = "1.1"
+pin-project-lite = "0.2.8"
 quote = "1.0"
 serde_json = "1"
 slab = "0.4.9"

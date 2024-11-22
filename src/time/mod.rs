@@ -1,9 +1,21 @@
 //! Async time interfaces.
+
+pub(crate) mod utils;
+
+mod duration;
+mod instant;
+pub use duration::Duration;
+pub use instant::Instant;
+
+pub mod future;
+pub mod stream;
+pub mod task;
+
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 use wasi::clocks::{
-    monotonic_clock::{self, subscribe_duration, subscribe_instant},
+    monotonic_clock::{subscribe_duration, subscribe_instant},
     wall_clock,
 };
 
@@ -12,6 +24,7 @@ use crate::{
     runtime::{PollableFuture, Reactor},
 };
 
+/*
 /// A Duration type to represent a span of time, typically used for system
 /// timeouts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -45,6 +58,7 @@ impl Instant {
         Self(monotonic_clock::now())
     }
 }
+*/
 
 /// A measurement of the system clock, useful for talking to external entities
 /// like the file system or other processes.
@@ -74,7 +88,7 @@ impl AsyncIterator for Interval {
 
     async fn next(&mut self) -> Option<Self::Item> {
         Timer::after(self.duration).await;
-        Some(Instant(wasi::clocks::monotonic_clock::now()))
+        Some(Instant::now())
     }
 }
 
@@ -86,10 +100,14 @@ impl Timer {
         Timer(None)
     }
     pub fn at(deadline: Instant) -> Timer {
-        Timer(Some(PollableFuture::new(subscribe_instant(deadline.0))))
+        Timer(Some(PollableFuture::new(subscribe_instant(
+            deadline.as_wasi(),
+        ))))
     }
     pub fn after(duration: Duration) -> Timer {
-        Timer(Some(PollableFuture::new(subscribe_duration(duration.0))))
+        Timer(Some(PollableFuture::new(subscribe_duration(
+            duration.as_wasi(),
+        ))))
     }
 }
 

@@ -1,12 +1,10 @@
-use crate::{
-    future::IntoFuture,
+use super::{
     stream::{Interval, IntoStream},
     task::Sleep,
+    Instant,
 };
-
+use std::future::IntoFuture;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
-
-use super::Instant;
 
 /// A Duration type to represent a span of time, typically used for system
 /// timeouts.
@@ -137,7 +135,7 @@ impl IntoFuture for Duration {
     type IntoFuture = Sleep;
 
     fn into_future(self) -> Self::IntoFuture {
-        crate::task::sleep(self)
+        super::task::sleep(self)
     }
 }
 
@@ -147,6 +145,6 @@ impl IntoStream for Duration {
     type IntoStream = Interval;
 
     fn into_stream(self) -> Self::IntoStream {
-        crate::stream::interval(self)
+        super::stream::interval(self)
     }
 }

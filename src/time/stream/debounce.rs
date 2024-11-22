@@ -5,7 +5,7 @@ use futures_core::ready;
 use futures_core::stream::Stream;
 use pin_project_lite::pin_project;
 
-use crate::future::Timer;
+use crate::time::future::Timer;
 
 pin_project! {
     /// Debounce the stream.

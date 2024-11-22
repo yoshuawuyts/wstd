@@ -1,4 +1,4 @@
-use crate::utils::timeout_err;
+use crate::time::utils::timeout_err;
 
 use std::future::Future;
 use std::io;

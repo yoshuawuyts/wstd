@@ -2,10 +2,10 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+use crate::time::Timer as AsyncTimer;
 use pin_project_lite::pin_project;
-use wstd::time::Timer as AsyncTimer;
 
-use crate::future::Timer;
+use crate::time::future::Timer;
 use crate::time::{Duration, Instant};
 
 /// Sleeps for the specified amount of time.
