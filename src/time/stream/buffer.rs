@@ -107,12 +107,12 @@ mod test {
 
     #[test]
     fn buffer_all_values() {
-        async_io::block_on(async {
+        crate::runtime::block_on(async {
             let interval = Duration::from_millis(5);
             let buffer = Duration::from_millis(20);
 
             let mut counter = 0;
-            crate::stream::interval(interval)
+            crate::time::stream::interval(interval)
                 .take(10)
                 .buffer(buffer)
                 .for_each(|buf| counter += buf.len())
@@ -124,12 +124,12 @@ mod test {
 
     #[test]
     fn no_debounces_hit() {
-        async_io::block_on(async {
+        crate::runtime::block_on(async {
             let interval = Duration::from_millis(20);
             let buffer = Duration::from_millis(10);
 
             let mut counter = 0;
-            crate::stream::interval(interval)
+            crate::time::stream::interval(interval)
                 .take(10)
                 .buffer(buffer)
                 .for_each(|buf| counter += buf.len())

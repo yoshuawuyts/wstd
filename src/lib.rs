@@ -1,4 +1,8 @@
 #![allow(async_fn_in_trait)]
+#![warn(future_incompatible, unreachable_pub)]
+//#![deny(missing_debug_implementations)]
+//#![warn(missing_docs)]
+//#![forbid(rustdoc::missing_doc_code_examples)]
 
 //! An async standard library for Wasm Components and WASI 0.2
 //!
@@ -53,3 +57,28 @@ pub mod runtime;
 pub mod time;
 
 pub use wstd_macro::attr_macro_main as main;
+
+pub mod prelude {
+    pub use crate::http::Body as _;
+    pub use crate::io::AsyncRead as _;
+    pub use crate::io::AsyncWrite as _;
+    pub use crate::time::future::FutureExt as _;
+    pub use crate::time::future::Timer as _;
+    pub use crate::time::stream::IntoStream as _;
+    pub use crate::time::stream::StreamExt as _;
+    pub use std::future::IntoFuture as _;
+}
+
+/// An async multi-producer multi-consumer channel.
+pub mod channel {
+    /// Suspend or resume execution of a future.
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+    pub enum Parker {
+        /// Put the future into a suspended state.
+        Park,
+        /// Put the future into an active state.
+        Unpark,
+    }
+    #[doc(inline)]
+    pub use async_channel::*;
+}

@@ -109,7 +109,7 @@ mod test {
 
     #[test]
     fn smoke() {
-        async_io::block_on(async {
+        crate::runtime::block_on(async {
             let interval = Duration::from_millis(100);
             let throttle = Duration::from_millis(300);
 
@@ -117,7 +117,7 @@ mod test {
             let expected = 2;
 
             let mut counter = 0;
-            crate::stream::interval(interval)
+            crate::time::stream::interval(interval)
                 .take(take)
                 .throttle(throttle)
                 .for_each(|_| counter += 1)

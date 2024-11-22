@@ -38,6 +38,7 @@ pub fn interval(duration: Duration) -> Interval {
 /// An async iterator representing notifications at fixed interval.
 ///
 /// See the [`interval`] function for more.
+#[derive(Debug)]
 pub struct Interval {
     duration: Duration,
 }

@@ -15,6 +15,7 @@ authors = [
 [features]
 
 [dependencies]
+async-channel.workspace = true
 futures-core.workspace = true
 http.workspace = true
 pin-project-lite.workspace = true
@@ -24,6 +25,7 @@ wstd-macro.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
+futures-lite.workspace = true
 serde_json.workspace = true
 test-programs-artifacts.workspace = true
 wasmtime.workspace = true
@@ -47,8 +49,10 @@ repository = "https://github.com/yoshuawuyts/wstd"
 
 [workspace.dependencies]
 anyhow = "1"
+async-channel = "1.6.1"
 cargo_metadata = "0.18.1"
 futures-core = "0.3.19"
+futures-lite = "1.12.0"
 heck = "0.5"
 http = "1.1"
 pin-project-lite = "0.2.8"
