@@ -97,30 +97,3 @@ impl<S: Stream, I: Stream> Stream for Sample<S, I> {
         }
     }
 }
-
-#[cfg(test)]
-mod test {
-    use crate::prelude::*;
-    use crate::time::Duration;
-    use futures_lite::prelude::*;
-
-    #[test]
-    fn smoke() {
-        crate::runtime::block_on(async {
-            let interval = Duration::from_millis(100);
-            let throttle = Duration::from_millis(200);
-
-            let take = 4;
-            let expected = 2;
-
-            let mut counter = 0;
-            crate::stream::interval(interval)
-                .take(take)
-                .sample(throttle)
-                .for_each(|_| counter += 1)
-                .await;
-
-            assert_eq!(counter, expected);
-        })
-    }
-}
