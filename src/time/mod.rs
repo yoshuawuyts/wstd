@@ -7,8 +7,6 @@ mod instant;
 pub use duration::Duration;
 pub use instant::Instant;
 
-pub mod task;
-
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};

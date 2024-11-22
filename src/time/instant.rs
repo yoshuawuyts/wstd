@@ -1,9 +1,8 @@
-use super::task::SleepUntil;
+use super::Duration;
+use crate::task::SleepUntil;
 use std::future::IntoFuture;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use wasi::clocks::monotonic_clock;
-
-use super::Duration;
 
 /// A measurement of a monotonically nondecreasing clock. Opaque and useful only
 /// with Duration.
@@ -78,6 +77,6 @@ impl IntoFuture for Instant {
     type IntoFuture = SleepUntil;
 
     fn into_future(self) -> Self::IntoFuture {
-        super::task::sleep_until(self)
+        crate::task::sleep_until(self)
     }
 }
