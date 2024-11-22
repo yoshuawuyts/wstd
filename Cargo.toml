@@ -2,7 +2,6 @@
 name = "wstd"
 version.workspace = true
 license.workspace = true
-repository = "https://github.com/yoshuawuyts/wstd"
 documentation = "https://docs.rs/wstd"
 description = "An async standard library for Wasm Components and WASI 0.2"
 readme = "README.md"
@@ -31,6 +30,7 @@ wasmtime-wasi-http.workspace = true
 
 [workspace]
 members = [
+    "futures-time",
     "macro",
     "test-programs",
     "test-programs/artifacts",
@@ -41,6 +41,7 @@ resolver = "2"
 version = "0.4.0"
 edition = "2021"
 license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
+repository = "https://github.com/yoshuawuyts/wstd"
 
 [workspace.dependencies]
 anyhow = "1"
@@ -59,3 +60,4 @@ wasmtime-wasi = "26"
 wasmtime-wasi-http = "26"
 wstd = { path = "." }
 wstd-macro = { path = "macro" }
+wstd-futures-time = { path = "futures-time" }
