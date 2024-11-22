@@ -1,0 +1,25 @@
+[package]
+name = "futures-time"
+version = "3.0.0"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/yoshuawuyts/futures-time"
+documentation = "https://docs.rs/futures-time"
+description = "async time combinators"
+readme = "README.md"
+edition = "2018"
+keywords = []
+categories = []
+authors = [
+    "Yoshua Wuyts <rust@yosh.is>"
+]
+
+[features]
+
+[dependencies]
+futures-core = "0.3.19"
+async-io = "1.6.0"
+pin-project-lite = "0.2.8"
+async-channel = "1.6.1"
+
+[dev-dependencies]
+futures-lite = "1.12.0"
