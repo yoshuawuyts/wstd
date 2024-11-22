@@ -23,10 +23,28 @@ impl Duration {
     }
 }
 
+impl From<std::time::Duration> for Duration {
+    fn from(std_dur: std::time::Duration) -> Duration {
+        Self::from_nanos(std_dur.as_nanos().try_into().unwrap_or(u64::MAX))
+    }
+}
+
+impl From<Duration> for std::time::Duration {
+    fn from(dur: Duration) -> std::time::Duration {
+        std::time::Duration::from_nanos(dur.0)
+    }
+}
+
 /// A measurement of a monotonically nondecreasing clock. Opaque and useful only
 /// with `Duration`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Instant(monotonic_clock::Instant);
+
+impl Instant {
+    pub fn now() -> Self {
+        Self(monotonic_clock::now())
+    }
+}
 
 /// A measurement of the system clock, useful for talking to external entities
 /// like the file system or other processes.
@@ -76,11 +94,14 @@ impl Timer {
 }
 
 impl Future for Timer {
-    type Output = ();
+    type Output = Instant;
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         match &mut self.as_mut().0 {
             None => Poll::Pending,
-            Some(pollable) => pollable.poll(&Reactor::current(), cx),
+            Some(pollable) => match pollable.poll(&Reactor::current(), cx) {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(()) => Poll::Ready(Instant::now()),
+            },
         }
     }
 }
