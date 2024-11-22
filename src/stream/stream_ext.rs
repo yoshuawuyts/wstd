@@ -1,10 +1,10 @@
-//use crate::channel::Parker;
+use crate::channel::Parker;
 use crate::future::Timer;
 use std::future::IntoFuture;
 
 use futures_core::Stream;
 
-use super::{Buffer, Debounce, Delay, IntoStream, /*Park,*/ Sample, Throttle, Timeout};
+use super::{Buffer, Debounce, Delay, IntoStream, Park, Sample, Throttle, Timeout};
 
 /// Extend `Stream` with time-based operations.
 pub trait StreamExt: Stream {
@@ -178,21 +178,19 @@ pub trait StreamExt: Stream {
     {
         Delay::new(self, deadline.into_future())
     }
-    /* FIXME
-        /// Suspend or resume execution of a stream.
-        ///
-        /// When this method is called the execution of the stream will be put into
-        /// a suspended state until the channel returns `Parker::Unpark` or the
-        /// channel's senders are dropped. The underlying stream will not be polled
-        /// while the it is paused.
-        fn park<I>(self, interval: I) -> Park<Self, I::IntoStream>
-        where
-            Self: Sized,
-            I: IntoStream<Item = Parker>,
-        {
-            Park::new(self, interval.into_stream())
-        }
-    */
+    /// Suspend or resume execution of a stream.
+    ///
+    /// When this method is called the execution of the stream will be put into
+    /// a suspended state until the channel returns `Parker::Unpark` or the
+    /// channel's senders are dropped. The underlying stream will not be polled
+    /// while the it is paused.
+    fn park<I>(self, interval: I) -> Park<Self, I::IntoStream>
+    where
+        Self: Sized,
+        I: IntoStream<Item = Parker>,
+    {
+        Park::new(self, interval.into_stream())
+    }
     /// Yield an item, then ignore subsequent items for a duration.
     ///
     /// In addition to using a time-based interval, this method can take any
