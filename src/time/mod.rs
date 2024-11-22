@@ -24,42 +24,6 @@ use crate::{
     runtime::{PollableFuture, Reactor},
 };
 
-/*
-/// A Duration type to represent a span of time, typically used for system
-/// timeouts.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Duration(monotonic_clock::Duration);
-
-impl Duration {
-    pub fn from_nanos(nanos: u64) -> Self {
-        Self(nanos)
-    }
-}
-
-impl From<std::time::Duration> for Duration {
-    fn from(std_dur: std::time::Duration) -> Duration {
-        Self::from_nanos(std_dur.as_nanos().try_into().unwrap_or(u64::MAX))
-    }
-}
-
-impl From<Duration> for std::time::Duration {
-    fn from(dur: Duration) -> std::time::Duration {
-        std::time::Duration::from_nanos(dur.0)
-    }
-}
-
-/// A measurement of a monotonically nondecreasing clock. Opaque and useful only
-/// with `Duration`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Instant(monotonic_clock::Instant);
-
-impl Instant {
-    pub fn now() -> Self {
-        Self(monotonic_clock::now())
-    }
-}
-*/
-
 /// A measurement of the system clock, useful for talking to external entities
 /// like the file system or other processes.
 #[derive(Debug, Clone, Copy)]
@@ -100,14 +64,13 @@ impl Timer {
         Timer(None)
     }
     pub fn at(deadline: Instant) -> Timer {
-        Timer(Some(PollableFuture::new(subscribe_instant(
-            deadline.as_wasi(),
-        ))))
+        Timer(Some(PollableFuture::new(subscribe_instant(*deadline))))
     }
     pub fn after(duration: Duration) -> Timer {
-        Timer(Some(PollableFuture::new(subscribe_duration(
-            duration.as_wasi(),
-        ))))
+        Timer(Some(PollableFuture::new(subscribe_duration(*duration))))
+    }
+    pub fn set_after(&mut self, duration: Duration) {
+        *self = Self::after(duration);
     }
 }
 

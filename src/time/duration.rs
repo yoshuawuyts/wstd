@@ -5,6 +5,7 @@ use super::{
 };
 use std::future::IntoFuture;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
+use wasi::clocks::monotonic_clock;
 
 /// A Duration type to represent a span of time, typically used for system
 /// timeouts.
@@ -13,7 +14,7 @@ use std::ops::{Add, AddAssign, Sub, SubAssign};
 /// without coherence issues, just like if we were implementing this in the
 /// stdlib.
 #[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Hash, Clone, Copy)]
-pub struct Duration(pub(crate) std::time::Duration);
+pub struct Duration(pub(crate) monotonic_clock::Duration);
 impl Duration {
     /// Creates a new `Duration` from the specified number of whole seconds and
     /// additional nanoseconds.
@@ -76,7 +77,7 @@ impl Duration {
 }
 
 impl std::ops::Deref for Duration {
-    type Target = std::time::Duration;
+    type Target = monotonic_clock::Duration;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -91,13 +92,18 @@ impl std::ops::DerefMut for Duration {
 
 impl From<std::time::Duration> for Duration {
     fn from(inner: std::time::Duration) -> Self {
-        Self(inner)
+        Self(
+            inner
+                .as_nanos()
+                .try_into()
+                .expect("only dealing with durations that can fit in u64"),
+        )
     }
 }
 
 impl Into<std::time::Duration> for Duration {
     fn into(self) -> std::time::Duration {
-        self.0
+        std::time::Duration::from_nanos(self.0)
     }
 }
 
@@ -105,13 +111,13 @@ impl Add<Duration> for Duration {
     type Output = Self;
 
     fn add(self, rhs: Duration) -> Self::Output {
-        (self.0 + rhs.0).into()
+        Self(self.0 + rhs.0)
     }
 }
 
 impl AddAssign<Duration> for Duration {
     fn add_assign(&mut self, rhs: Duration) {
-        *self = (self.0 + rhs.0).into()
+        *self = Self(self.0 + rhs.0)
     }
 }
 
@@ -119,13 +125,13 @@ impl Sub<Duration> for Duration {
     type Output = Self;
 
     fn sub(self, rhs: Duration) -> Self::Output {
-        (self.0 - rhs.0).into()
+        Self(self.0 - rhs.0)
     }
 }
 
 impl SubAssign<Duration> for Duration {
     fn sub_assign(&mut self, rhs: Duration) {
-        *self = (self.0 - rhs.0).into()
+        *self = Self(self.0 - rhs.0)
     }
 }
 

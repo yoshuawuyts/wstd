@@ -50,7 +50,7 @@ impl Timer for Sleep {
     /// Resets the timer to be `Instant::now()` + `Duration` into the future.
     fn reset_timer(self: std::pin::Pin<&mut Self>) {
         let mut this = self.project();
-        this.timer.set_after(**this.dur);
+        this.timer.set_after(*this.dur);
         *this.completed = false;
     }
 }
