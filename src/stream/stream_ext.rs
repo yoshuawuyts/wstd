@@ -1,5 +1,5 @@
 //use crate::channel::Parker;
-use crate::time::future::Timer;
+use crate::future::Timer;
 use std::future::IntoFuture;
 
 use futures_core::Stream;

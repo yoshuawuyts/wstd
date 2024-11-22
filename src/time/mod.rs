@@ -7,8 +7,6 @@ mod instant;
 pub use duration::Duration;
 pub use instant::Instant;
 
-pub mod future;
-pub mod stream;
 pub mod task;
 
 use std::future::Future;

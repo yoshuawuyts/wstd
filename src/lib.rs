@@ -48,24 +48,26 @@
 //! These are unique capabilities provided by WASI 0.2, and because this library
 //! is specific to that are exposed from here.
 
+pub mod future;
 pub mod http;
 pub mod io;
 pub mod iter;
 pub mod net;
 pub mod rand;
 pub mod runtime;
+pub mod stream;
 pub mod time;
 
 pub use wstd_macro::attr_macro_main as main;
 
 pub mod prelude {
+    pub use crate::future::FutureExt as _;
+    pub use crate::future::Timer as _;
     pub use crate::http::Body as _;
     pub use crate::io::AsyncRead as _;
     pub use crate::io::AsyncWrite as _;
-    pub use crate::time::future::FutureExt as _;
-    pub use crate::time::future::Timer as _;
-    pub use crate::time::stream::IntoStream as _;
-    pub use crate::time::stream::StreamExt as _;
+    pub use crate::stream::IntoStream as _;
+    pub use crate::stream::StreamExt as _;
     pub use std::future::IntoFuture as _;
 }
 

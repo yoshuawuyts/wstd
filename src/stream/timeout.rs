@@ -6,7 +6,8 @@ use pin_project_lite::pin_project;
 use core::task::{Context, Poll};
 use futures_core::stream::Stream;
 
-use crate::time::{future::Timer, utils};
+use crate::future::Timer;
+use crate::time::utils;
 
 pin_project! {
     /// A stream with timeout time set

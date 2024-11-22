@@ -112,7 +112,7 @@ mod test {
             let buffer = Duration::from_millis(20);
 
             let mut counter = 0;
-            crate::time::stream::interval(interval)
+            crate::stream::interval(interval)
                 .take(10)
                 .buffer(buffer)
                 .for_each(|buf| counter += buf.len())
@@ -129,7 +129,7 @@ mod test {
             let buffer = Duration::from_millis(10);
 
             let mut counter = 0;
-            crate::time::stream::interval(interval)
+            crate::stream::interval(interval)
                 .take(10)
                 .buffer(buffer)
                 .for_each(|buf| counter += buf.len())
