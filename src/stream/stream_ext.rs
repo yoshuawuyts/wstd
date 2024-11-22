@@ -32,23 +32,22 @@ pub trait StreamExt: Stream {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```no_run
     /// use futures_lite::prelude::*;
-    /// use futures_time::prelude::*;
-    /// use futures_time::time::{Instant, Duration};
-    /// use futures_time::stream;
+    /// use wstd::prelude::*;
+    /// use wstd::time::{Instant, Duration};
+    /// use wstd::stream;
     ///
-    /// fn main() {
-    ///    async_io::block_on(async {
-    ///        let mut counter = 0;
-    ///        stream::interval(Duration::from_millis(100))
-    ///            .take(4)
-    ///            .sample(Duration::from_millis(200))
-    ///            .for_each(|_| counter += 1)
-    ///            .await;
+    /// #[wstd::main]
+    /// async fn main() {
+    ///     let mut counter = 0;
+    ///     stream::interval(Duration::from_millis(100))
+    ///         .take(4)
+    ///         .sample(Duration::from_millis(200))
+    ///         .for_each(|_| counter += 1)
+    ///         .await;
     ///
-    ///        assert_eq!(counter, 2);
-    ///    })
+    ///     assert_eq!(counter, 2);
     /// }
     /// ```
     fn sample<I>(self, interval: I) -> Sample<Self, I::IntoStream>
@@ -73,23 +72,22 @@ pub trait StreamExt: Stream {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```no_run
     /// use futures_lite::prelude::*;
-    /// use futures_time::prelude::*;
-    /// use futures_time::time::{Instant, Duration};
-    /// use futures_time::stream;
+    /// use wstd::prelude::*;
+    /// use wstd::time::{Instant, Duration};
+    /// use wstd::stream;
     ///
-    /// fn main() {
-    ///     async_io::block_on(async {
-    ///         let mut counter = 0;
-    ///         stream::interval(Duration::from_millis(5))
-    ///             .take(10)
-    ///             .buffer(Duration::from_millis(20))
-    ///             .for_each(|buf| counter += buf.len())
-    ///             .await;
+    /// #[wstd::main]
+    /// async fn main() {
+    ///     let mut counter = 0;
+    ///     stream::interval(Duration::from_millis(5))
+    ///         .take(10)
+    ///         .buffer(Duration::from_millis(20))
+    ///         .for_each(|buf| counter += buf.len())
+    ///         .await;
     ///
-    ///         assert_eq!(counter, 10);
-    ///     })
+    ///     assert_eq!(counter, 10);
     /// }
     /// ```
     fn buffer<I>(self, interval: I) -> Buffer<Self, I::IntoStream>
@@ -119,23 +117,22 @@ pub trait StreamExt: Stream {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```no_run
     /// use futures_lite::prelude::*;
-    /// use futures_time::prelude::*;
-    /// use futures_time::time::{Instant, Duration};
-    /// use futures_time::stream;
+    /// use wstd::prelude::*;
+    /// use wstd::time::{Instant, Duration};
+    /// use wstd::stream;
     ///
-    /// fn main() {
-    ///     async_io::block_on(async {
-    ///         let mut counter = 0;
-    ///         stream::interval(Duration::from_millis(10))
-    ///             .take(10)
-    ///             .debounce(Duration::from_millis(20)) // the window is greater than the interval
-    ///             .for_each(|_| counter += 1)
-    ///             .await;
+    /// #[wstd::main]
+    /// async fn main() {
+    ///     let mut counter = 0;
+    ///     stream::interval(Duration::from_millis(10))
+    ///         .take(10)
+    ///         .debounce(Duration::from_millis(20)) // the window is greater than the interval
+    ///         .for_each(|_| counter += 1)
+    ///         .await;
     ///
-    ///         assert_eq!(counter, 1); // so only the last item is received
-    ///     })
+    ///     assert_eq!(counter, 1); // so only the last item is received
     /// }
     /// ```
     fn debounce<D>(self, window: D) -> Debounce<Self, D::IntoFuture>
@@ -156,19 +153,18 @@ pub trait StreamExt: Stream {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```no_run
     /// use futures_lite::prelude::*;
-    /// use futures_time::prelude::*;
-    /// use futures_time::time::{Instant, Duration};
-    /// use futures_lite::stream;
+    /// use wstd::prelude::*;
+    /// use wstd::time::{Instant, Duration};
+    /// use wstd::stream;
     ///
-    /// fn main() {
-    ///     async_io::block_on(async {
-    ///         let now = Instant::now();
-    ///         let delay = Duration::from_millis(100);
-    ///         let _ = stream::once("meow").delay(delay).next().await;
-    ///         assert!(now.elapsed() >= *delay);
-    ///     });
+    /// #[wstd::main]
+    /// async fn main() {
+    ///     let now = Instant::now();
+    ///     let delay = Duration::from_millis(100);
+    ///     let _ = futures_lite::stream::once("meow").delay(delay).next().await;
+    ///     assert!(now.elapsed() >= delay);
     /// }
     /// ```
     fn delay<D>(self, deadline: D) -> Delay<Self, D::IntoFuture>
@@ -214,23 +210,22 @@ pub trait StreamExt: Stream {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use futures_lite::prelude::*;
-    /// use futures_time::prelude::*;
-    /// use futures_time::time::Duration;
-    /// use futures_time::stream;
+    /// use wstd::prelude::*;
+    /// use wstd::time::Duration;
+    /// use wstd::stream;
     ///
-    /// fn main() {
-    ///     async_io::block_on(async {
-    ///         let mut counter = 0;
-    ///         stream::interval(Duration::from_millis(100))  // Yield an item every 100ms
-    ///             .take(4)                                  // Stop after 4 items
-    ///             .throttle(Duration::from_millis(300))     // Only let an item through every 300ms
-    ///             .for_each(|_| counter += 1)               // Increment a counter for each item
-    ///             .await;
+    /// #[wstd::main]
+    /// async fn main() {
+    ///     let mut counter = 0;
+    ///     stream::interval(Duration::from_millis(100))  // Yield an item every 100ms
+    ///         .take(4)                                  // Stop after 4 items
+    ///         .throttle(Duration::from_millis(300))     // Only let an item through every 300ms
+    ///         .for_each(|_| counter += 1)               // Increment a counter for each item
+    ///         .await;
     ///
-    ///         assert_eq!(counter, 2);
-    ///     })
+    ///     assert_eq!(counter, 2);
     /// }
     /// ```
     fn throttle<I>(self, interval: I) -> Throttle<Self, I::IntoStream>
@@ -254,29 +249,28 @@ pub trait StreamExt: Stream {
     ///
     /// # Example
     ///
-    /// ```
+    /// ```no_run
     /// use futures_lite::prelude::*;
-    /// use futures_time::prelude::*;
-    /// use futures_time::time::{Instant, Duration};
-    /// use futures_lite::stream;
+    /// use wstd::prelude::*;
+    /// use wstd::time::{Instant, Duration};
+    /// use wstd::stream;
     /// use std::io;
     ///
-    /// fn main() {
-    ///     async_io::block_on(async {
-    ///         let res = stream::once("meow")
-    ///             .delay(Duration::from_millis(100))  // longer delay
-    ///             .timeout(Duration::from_millis(50)) // shorter timeout
-    ///             .next()
-    ///             .await;
-    ///         assert_eq!(res.unwrap().unwrap_err().kind(), io::ErrorKind::TimedOut); // error
+    /// #[wstd::main]
+    /// async fn main() {
+    ///     let res = futures_lite::stream::once("meow")
+    ///         .delay(Duration::from_millis(100))  // longer delay
+    ///         .timeout(Duration::from_millis(50)) // shorter timeout
+    ///         .next()
+    ///         .await;
+    ///     assert_eq!(res.unwrap().unwrap_err().kind(), io::ErrorKind::TimedOut); // error
     ///
-    ///         let res = stream::once("meow")
-    ///             .delay(Duration::from_millis(50))    // shorter delay
-    ///             .timeout(Duration::from_millis(100)) // longer timeout
-    ///             .next()
-    ///             .await;
-    ///         assert_eq!(res.unwrap().unwrap(), "meow"); // success
-    ///     });
+    ///     let res = futures_lite::stream::once("meow")
+    ///         .delay(Duration::from_millis(50))    // shorter delay
+    ///         .timeout(Duration::from_millis(100)) // longer timeout
+    ///         .next()
+    ///         .await;
+    ///     assert_eq!(res.unwrap().unwrap(), "meow"); // success
     /// }
     /// ```
     fn timeout<D>(self, deadline: D) -> Timeout<Self, D::IntoFuture>

@@ -50,8 +50,8 @@ impl Duration {
     /// This constructor will panic if `secs` is not finite, negative or overflows `Duration`.
     ///
     /// # Examples
-    /// ```
-    /// use futures_time::time::Duration;
+    /// ```no_run
+    /// use wstd::time::Duration;
     ///
     /// let dur = Duration::from_secs_f64(2.7);
     /// assert_eq!(dur, Duration::new(2, 700_000_000));

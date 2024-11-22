@@ -18,14 +18,25 @@ impl Instant {
     ///
     /// # Examples
     ///
-    /// ```
-    /// use futures_time::time::Instant;
+    /// ```no_run
+    /// use wstd::time::Instant;
     ///
     /// let now = Instant::now();
     /// ```
     #[must_use]
     pub fn now() -> Self {
         Instant(wasi::clocks::monotonic_clock::now())
+    }
+
+    /// Returns the amount of time elapsed from another instant to this one, or zero duration if
+    /// that instant is later than this one.
+    pub fn duration_since(&self, earlier: Instant) -> Duration {
+        Duration::from_micros(self.0.checked_sub(earlier.0).unwrap_or_default())
+    }
+
+    /// Returns the amount of time elapsed since this instant.
+    pub fn elapsed(&self) -> Duration {
+        Instant::now().duration_since(*self)
     }
 }
 

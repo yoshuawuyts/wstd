@@ -19,23 +19,22 @@
 //! [`Stream::timeout`]: crate::stream::StreamExt::timeout
 //!
 //!
-//! ```
+//! ```no_run
 //! use futures_lite::prelude::*;
-//! use futures_time::prelude::*;
-//! use futures_time::channel;
-//! use futures_time::time::Duration;
+//! use wstd::prelude::*;
+//! use wstd::channel;
+//! use wstd::time::Duration;
 //!
-//! fn main() {
-//!     async_io::block_on(async {
-//!         let (send, mut recv) = channel::bounded::<()>(1); // create a new send/receive pair
-//!         let mut counter = 0;
-//!         let value = async { "meow" }
-//!             .delay(Duration::from_millis(100))
-//!             .timeout(recv.next()) // time-out if the sender is dropped.
-//!             .await;
+//! #[wstd::main]
+//! async fn main() {
+//!     let (send, mut recv) = channel::bounded::<()>(1); // create a new send/receive pair
+//!     let mut counter = 0;
+//!     let value = async { "meow" }
+//!         .delay(Duration::from_millis(100))
+//!         .timeout(recv.next()) // time-out if the sender is dropped.
+//!         .await;
 //!
-//!         assert_eq!(value.unwrap(), "meow");
-//!     })
+//!     assert_eq!(value.unwrap(), "meow");
 //! }
 //! ```
 
