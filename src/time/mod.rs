@@ -1,11 +1,16 @@
 //! Async time interfaces.
-
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use wasi::clocks::{
     monotonic_clock::{self, subscribe_duration, subscribe_instant},
     wall_clock,
 };
 
-use crate::{iter::AsyncIterator, runtime::Reactor};
+use crate::{
+    iter::AsyncIterator,
+    runtime::{PollableFuture, Reactor},
+};
 
 /// A Duration type to represent a span of time, typically used for system
 /// timeouts.
@@ -50,21 +55,32 @@ impl AsyncIterator for Interval {
     type Item = Instant;
 
     async fn next(&mut self) -> Option<Self::Item> {
-        wait_for(self.duration).await;
+        Timer::after(self.duration).await;
         Some(Instant(wasi::clocks::monotonic_clock::now()))
     }
 }
 
-/// Wait until the passed duration has elapsed.
-pub async fn wait_for(duration: Duration) {
-    Reactor::current()
-        .wait_for(subscribe_duration(duration.0))
-        .await;
+#[derive(Debug)]
+pub struct Timer(Option<PollableFuture>);
+
+impl Timer {
+    pub fn never() -> Timer {
+        Timer(None)
+    }
+    pub fn at(deadline: Instant) -> Timer {
+        Timer(Some(PollableFuture::new(subscribe_instant(deadline.0))))
+    }
+    pub fn after(duration: Duration) -> Timer {
+        Timer(Some(PollableFuture::new(subscribe_duration(duration.0))))
+    }
 }
 
-/// Wait until the passed instant.
-pub async fn wait_until(deadline: Instant) {
-    Reactor::current()
-        .wait_for(subscribe_instant(deadline.0))
-        .await;
+impl Future for Timer {
+    type Output = ();
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        match &mut self.as_mut().0 {
+            None => Poll::Pending,
+            Some(pollable) => pollable.poll(&Reactor::current(), cx),
+        }
+    }
 }

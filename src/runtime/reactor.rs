@@ -73,31 +73,47 @@ impl Reactor {
 
     /// Wait for the pollable to resolve.
     pub async fn wait_for(&self, pollable: Pollable) {
-        let mut pollable = Some(pollable);
-        let mut key = None;
-
+        let mut pollable = PollableFuture::new(pollable);
         // This function is the core loop of our function; it will be called
         // multiple times as the future is resolving.
-        future::poll_fn(|cx| {
-            // Start by taking a lock on the reactor. This is single-threaded
-            // and short-lived, so it will never be contended.
-            let mut reactor = self.inner.borrow_mut();
+        future::poll_fn(|cx| pollable.poll(self, cx)).await
+    }
+}
 
-            // Schedule interest in the `pollable` on the first iteration. On
-            // every iteration, register the waker with the reactor.
-            let key = key.get_or_insert_with(|| reactor.poller.insert(pollable.take().unwrap()));
-            reactor.wakers.insert(*key, cx.waker().clone());
+#[derive(Debug)]
+pub(crate) struct PollableFuture {
+    pollable: Option<Pollable>,
+    key: Option<EventKey>,
+}
 
-            // Check whether we're ready or need to keep waiting. If we're
-            // ready, we clean up after ourselves.
-            if reactor.poller.get(key).unwrap().ready() {
-                reactor.poller.remove(*key);
-                reactor.wakers.remove(key);
-                Poll::Ready(())
-            } else {
-                Poll::Pending
-            }
-        })
-        .await
+impl PollableFuture {
+    pub(crate) fn new(pollable: Pollable) -> Self {
+        PollableFuture {
+            pollable: Some(pollable),
+            key: None,
+        }
+    }
+
+    pub(crate) fn poll(&mut self, reactor: &Reactor, cx: &mut std::task::Context<'_>) -> Poll<()> {
+        // Start by taking a lock on the reactor. This is single-threaded
+        // and short-lived, so it will never be contended.
+        let mut reactor = reactor.inner.borrow_mut();
+
+        // Schedule interest in the `pollable` on the first iteration. On
+        // every iteration, register the waker with the reactor.
+        let key = self
+            .key
+            .get_or_insert_with(|| reactor.poller.insert(self.pollable.take().unwrap()));
+        reactor.wakers.insert(*key, cx.waker().clone());
+
+        // Check whether we're ready or need to keep waiting. If we're
+        // ready, we clean up after ourselves.
+        if reactor.poller.get(key).unwrap().ready() {
+            reactor.poller.remove(*key);
+            reactor.wakers.remove(key);
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
     }
 }
