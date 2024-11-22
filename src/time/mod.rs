@@ -1,5 +1,8 @@
 //! Async time interfaces.
-
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+use wasi::clocks::{monotonic_clock::subscribe_instant, wall_clock};
 use wasi::clocks::{
     monotonic_clock::{self, subscribe_duration, subscribe_instant},
     wall_clock,
@@ -50,21 +53,47 @@ impl AsyncIterator for Interval {
     type Item = Instant;
 
     async fn next(&mut self) -> Option<Self::Item> {
-        wait_for(self.duration).await;
-        Some(Instant(wasi::clocks::monotonic_clock::now()))
+        Timer::after(self.duration).wait().await;
+        Some(Instant::now())
     }
 }
 
-/// Wait until the passed duration has elapsed.
-pub async fn wait_for(duration: Duration) {
-    Reactor::current()
-        .wait_for(subscribe_duration(duration.0))
-        .await;
+#[derive(Debug)]
+pub struct Timer(Option<Instant>);
+
+impl Timer {
+    pub fn never() -> Timer {
+        Timer(None)
+    }
+    pub fn at(deadline: Instant) -> Timer {
+        Timer(Some(deadline))
+    }
+    pub fn after(duration: Duration) -> Timer {
+        Timer(Some(Instant::now() + duration))
+    }
+    pub fn set_after(&mut self, duration: Duration) {
+        *self = Self::after(duration);
+    }
+    pub async fn wait(&self) {
+        match self.0 {
+            Some(deadline) => {
+                Reactor::current()
+                    .wait_for(subscribe_instant(*deadline))
+                    .await
+            }
+            None => std::future::pending().await,
+        }
+    }
 }
 
-/// Wait until the passed instant.
-pub async fn wait_until(deadline: Instant) {
-    Reactor::current()
-        .wait_for(subscribe_instant(deadline.0))
-        .await;
+impl Future for Timer {
+    type Output = Instant;
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let this = self.as_ref();
+        let pinned = std::pin::pin!(this.wait());
+        match pinned.poll(cx) {
+            Poll::Pending => Poll::Pending,
+            Poll::Ready(()) => Poll::Ready(Instant::now()),
+        }
+    }
 }
