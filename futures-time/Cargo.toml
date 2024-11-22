@@ -1,10 +1,10 @@
 [package]
-name = "futures-time"
-version = "3.0.0"
-license = "MIT OR Apache-2.0"
-repository = "https://github.com/yoshuawuyts/futures-time"
-documentation = "https://docs.rs/futures-time"
-description = "async time combinators"
+name = "wstd-futures-time"
+version.workspace = true
+license.workspace = true
+repository.workspace = true
+documentation = "https://docs.rs/wstd-futures-time"
+description = "async time combinators for wstd"
 readme = "README.md"
 edition = "2018"
 keywords = []
@@ -16,8 +16,8 @@ authors = [
 [features]
 
 [dependencies]
+wstd.workspace = true
 futures-core = "0.3.19"
-async-io = "1.6.0"
 pin-project-lite = "0.2.8"
 async-channel = "1.6.1"
 

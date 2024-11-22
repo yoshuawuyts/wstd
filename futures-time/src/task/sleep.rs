@@ -2,8 +2,8 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use async_io::Timer as AsyncTimer;
 use pin_project_lite::pin_project;
+use wstd::time::Timer as AsyncTimer;
 
 use crate::future::Timer;
 use crate::time::{Duration, Instant};
