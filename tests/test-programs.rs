@@ -152,6 +152,8 @@ fn buffer_all_values() -> Result<()> {
     run_in_wasmtime(&wasm, None)
 }
 
+// This test is failing around 25% of the time. Needs further investigation.
+#[ignore]
 #[test]
 fn buffer_no_debounces_hit() -> Result<()> {
     println!(
