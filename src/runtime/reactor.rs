@@ -75,7 +75,6 @@ impl Reactor {
     pub async fn wait_for(&self, pollable: Pollable) {
         let mut pollable = Some(pollable);
         let mut key = None;
-
         // This function is the core loop of our function; it will be called
         // multiple times as the future is resolving.
         future::poll_fn(|cx| {
