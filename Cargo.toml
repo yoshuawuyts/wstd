@@ -34,7 +34,6 @@ wasmtime-wasi-http.workspace = true
 
 [workspace]
 members = [
-    "futures-time",
     "macro",
     "test-programs",
     "test-programs/artifacts",
@@ -68,4 +67,3 @@ wasmtime-wasi = "26"
 wasmtime-wasi-http = "26"
 wstd = { path = "." }
 wstd-macro = { path = "macro" }
-wstd-futures-time = { path = "futures-time" }
