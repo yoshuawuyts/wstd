@@ -10,7 +10,10 @@ pub use instant::Instant;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use wasi::clocks::{monotonic_clock::subscribe_instant, wall_clock};
+use wasi::clocks::{
+    monotonic_clock::{subscribe_duration, subscribe_instant},
+    wall_clock,
+};
 
 use crate::{iter::AsyncIterator, runtime::Reactor};
 
@@ -48,28 +51,24 @@ impl AsyncIterator for Interval {
 }
 
 #[derive(Debug)]
-pub struct Timer(Option<Instant>);
+pub struct Timer(Option<wasi::io::poll::Pollable>);
 
 impl Timer {
     pub fn never() -> Timer {
         Timer(None)
     }
     pub fn at(deadline: Instant) -> Timer {
-        Timer(Some(deadline))
+        Timer(Some(subscribe_instant(*deadline)))
     }
     pub fn after(duration: Duration) -> Timer {
-        Timer(Some(Instant::now() + duration))
+        Timer(Some(subscribe_duration(*duration)))
     }
     pub fn set_after(&mut self, duration: Duration) {
         *self = Self::after(duration);
     }
     pub async fn wait(&self) {
-        match self.0 {
-            Some(deadline) => {
-                Reactor::current()
-                    .wait_for(&subscribe_instant(*deadline))
-                    .await
-            }
+        match &self.0 {
+            Some(pollable) => Reactor::current().wait_for(&pollable).await,
             None => std::future::pending().await,
         }
     }
