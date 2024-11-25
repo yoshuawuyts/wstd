@@ -1,8 +1,7 @@
 use super::{response::IncomingBody, Body, Error, Request, Response, Result};
 use crate::io::{self, AsyncWrite};
 use crate::runtime::Reactor;
-use std::time::Duration;
-use wasi::clocks::monotonic_clock::Duration as WasiDuration;
+use crate::time::Duration;
 use wasi::http::types::{OutgoingBody, RequestOptions as WasiRequestOptions};
 
 /// An HTTP client.
@@ -46,18 +45,18 @@ impl Client {
     }
 
     /// Set timeout on connecting to HTTP server
-    pub fn set_connect_timeout(&mut self, d: Duration) {
-        self.options_mut().connect_timeout = Some(d);
+    pub fn set_connect_timeout(&mut self, d: impl Into<Duration>) {
+        self.options_mut().connect_timeout = Some(d.into());
     }
 
     /// Set timeout on recieving first byte of the Response body
-    pub fn set_first_byte_timeout(&mut self, d: Duration) {
-        self.options_mut().first_byte_timeout = Some(d);
+    pub fn set_first_byte_timeout(&mut self, d: impl Into<Duration>) {
+        self.options_mut().first_byte_timeout = Some(d.into());
     }
 
     /// Set timeout on recieving subsequent chunks of bytes in the Response body stream
-    pub fn set_between_bytes_timeout(&mut self, d: Duration) {
-        self.options_mut().between_bytes_timeout = Some(d);
+    pub fn set_between_bytes_timeout(&mut self, d: impl Into<Duration>) {
+        self.options_mut().between_bytes_timeout = Some(d.into());
     }
 
     fn options_mut(&mut self) -> &mut RequestOptions {
@@ -113,36 +112,23 @@ impl RequestOptions {
     fn to_wasi(&self) -> Result<WasiRequestOptions> {
         let wasi = WasiRequestOptions::new();
         if let Some(timeout) = self.connect_timeout {
-            wasi.set_connect_timeout(Some(
-                dur_to_wasi(timeout).map_err(|e| e.context("connect timeout"))?,
-            ))
-            .map_err(|()| {
+            wasi.set_connect_timeout(Some(*timeout)).map_err(|()| {
                 Error::other("wasi-http implementation does not support connect timeout option")
             })?;
         }
         if let Some(timeout) = self.first_byte_timeout {
-            wasi.set_first_byte_timeout(Some(
-                dur_to_wasi(timeout).map_err(|e| e.context("first byte timeout"))?,
-            ))
-            .map_err(|()| {
+            wasi.set_first_byte_timeout(Some(*timeout)).map_err(|()| {
                 Error::other("wasi-http implementation does not support first byte timeout option")
             })?;
         }
         if let Some(timeout) = self.between_bytes_timeout {
-            wasi.set_between_bytes_timeout(Some(
-                dur_to_wasi(timeout).map_err(|e| e.context("between byte timeout"))?,
-            ))
-            .map_err(|()| {
-                Error::other(
-                    "wasi-http implementation does not support between byte timeout option",
-                )
-            })?;
+            wasi.set_between_bytes_timeout(Some(*timeout))
+                .map_err(|()| {
+                    Error::other(
+                        "wasi-http implementation does not support between byte timeout option",
+                    )
+                })?;
         }
         Ok(wasi)
     }
-}
-fn dur_to_wasi(d: Duration) -> Result<WasiDuration> {
-    d.as_nanos()
-        .try_into()
-        .map_err(|_| Error::other("duration out of range supported by wasi"))
 }
