@@ -1,9 +1,5 @@
-use core::future::Future;
-
-use crate::channel::Parker;
-use crate::stream::IntoStream;
-
-use super::{Delay, IntoFuture, Park, Timeout};
+use super::{Delay, Timeout};
+use std::future::{Future, IntoFuture};
 
 /// Extend `Future` with time-based operations.
 pub trait FutureExt: Future {
@@ -74,19 +70,6 @@ pub trait FutureExt: Future {
         D: IntoFuture,
     {
         Delay::new(self, deadline.into_future())
-    }
-    /// Suspend or resume execution of a future.
-    ///
-    /// When this method is called the execution of the future will be put into
-    /// a suspended state until the channel returns `Parker::Unpark` or the
-    /// channel's senders are dropped. The underlying future will not be polled
-    /// while the it is paused.
-    fn park<I>(self, interval: I) -> Park<Self, I::IntoStream>
-    where
-        Self: Sized,
-        I: IntoStream<Item = Parker>,
-    {
-        Park::new(self, interval.into_stream())
     }
 }
 

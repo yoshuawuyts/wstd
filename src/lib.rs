@@ -55,7 +55,6 @@ pub mod iter;
 pub mod net;
 pub mod rand;
 pub mod runtime;
-pub mod stream;
 pub mod task;
 pub mod time;
 
@@ -63,25 +62,7 @@ pub use wstd_macro::attr_macro_main as main;
 
 pub mod prelude {
     pub use crate::future::FutureExt as _;
-    pub use crate::future::Timer as _;
     pub use crate::http::Body as _;
     pub use crate::io::AsyncRead as _;
     pub use crate::io::AsyncWrite as _;
-    pub use crate::stream::IntoStream as _;
-    pub use crate::stream::StreamExt as _;
-    pub use std::future::IntoFuture as _;
-}
-
-/// An async multi-producer multi-consumer channel.
-pub mod channel {
-    /// Suspend or resume execution of a future.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-    pub enum Parker {
-        /// Put the future into a suspended state.
-        Park,
-        /// Put the future into an active state.
-        Unpark,
-    }
-    #[doc(inline)]
-    pub use async_channel::*;
 }

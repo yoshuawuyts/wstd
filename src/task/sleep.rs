@@ -5,7 +5,6 @@ use std::task::{Context, Poll};
 use crate::time::Timer as AsyncTimer;
 use pin_project_lite::pin_project;
 
-use crate::future::Timer;
 use crate::time::{Duration, Instant};
 
 /// Sleeps for the specified amount of time.
@@ -43,14 +42,5 @@ impl Future for Sleep {
             }
             Poll::Pending => Poll::Pending,
         }
-    }
-}
-
-impl Timer for Sleep {
-    /// Resets the timer to be `Instant::now()` + `Duration` into the future.
-    fn reset_timer(self: std::pin::Pin<&mut Self>) {
-        let mut this = self.project();
-        this.timer.set_after(*this.dur);
-        *this.completed = false;
     }
 }

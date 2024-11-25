@@ -1,5 +1,4 @@
 use super::Instant;
-use crate::stream::{Interval, IntoStream};
 use crate::task::Sleep;
 use std::future::IntoFuture;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -140,15 +139,5 @@ impl IntoFuture for Duration {
 
     fn into_future(self) -> Self::IntoFuture {
         crate::task::sleep(self)
-    }
-}
-
-impl IntoStream for Duration {
-    type Item = Instant;
-
-    type IntoStream = Interval;
-
-    fn into_stream(self) -> Self::IntoStream {
-        crate::stream::interval(self)
     }
 }
