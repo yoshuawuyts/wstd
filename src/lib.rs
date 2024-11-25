@@ -1,4 +1,8 @@
 #![allow(async_fn_in_trait)]
+#![warn(future_incompatible, unreachable_pub)]
+//#![deny(missing_debug_implementations)]
+//#![warn(missing_docs)]
+//#![forbid(rustdoc::missing_doc_code_examples)]
 
 //! An async standard library for Wasm Components and WASI 0.2
 //!
@@ -44,12 +48,21 @@
 //! These are unique capabilities provided by WASI 0.2, and because this library
 //! is specific to that are exposed from here.
 
+pub mod future;
 pub mod http;
 pub mod io;
 pub mod iter;
 pub mod net;
 pub mod rand;
 pub mod runtime;
+pub mod task;
 pub mod time;
 
 pub use wstd_macro::attr_macro_main as main;
+
+pub mod prelude {
+    pub use crate::future::FutureExt as _;
+    pub use crate::http::Body as _;
+    pub use crate::io::AsyncRead as _;
+    pub use crate::io::AsyncWrite as _;
+}

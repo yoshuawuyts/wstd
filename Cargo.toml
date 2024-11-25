@@ -2,7 +2,6 @@
 name = "wstd"
 version.workspace = true
 license.workspace = true
-repository = "https://github.com/yoshuawuyts/wstd"
 documentation = "https://docs.rs/wstd"
 description = "An async standard library for Wasm Components and WASI 0.2"
 readme = "README.md"
@@ -16,13 +15,16 @@ authors = [
 [features]
 
 [dependencies]
+futures-core.workspace = true
 http.workspace = true
+pin-project-lite.workspace = true
 slab.workspace = true
 wasi.workspace = true
 wstd-macro.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
+futures-lite.workspace = true
 serde_json.workspace = true
 test-programs-artifacts.workspace = true
 wasmtime.workspace = true
@@ -41,12 +43,16 @@ resolver = "2"
 version = "0.4.0"
 edition = "2021"
 license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
+repository = "https://github.com/yoshuawuyts/wstd"
 
 [workspace.dependencies]
 anyhow = "1"
 cargo_metadata = "0.18.1"
+futures-core = "0.3.19"
+futures-lite = "1.12.0"
 heck = "0.5"
 http = "1.1"
+pin-project-lite = "0.2.8"
 quote = "1.0"
 serde_json = "1"
 slab = "0.4.9"
