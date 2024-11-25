@@ -144,3 +144,10 @@ fn http_first_byte_timeout() -> Result<()> {
         std::fs::read(test_programs_artifacts::HTTP_FIRST_BYTE_TIMEOUT).context("read wasm")?;
     run_in_wasmtime(&wasm, None)
 }
+
+#[test]
+fn http_timeout() -> Result<()> {
+    println!("testing {}", test_programs_artifacts::HTTP_TIMEOUT);
+    let wasm = std::fs::read(test_programs_artifacts::HTTP_TIMEOUT).context("read wasm")?;
+    run_in_wasmtime(&wasm, None)
+}
