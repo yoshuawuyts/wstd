@@ -2,7 +2,14 @@ use super::{response::IncomingBody, Body, Error, Request, Response, Result};
 use crate::io::{self, AsyncWrite};
 use crate::runtime::Reactor;
 use crate::time::Duration;
-use wasi::http::types::{OutgoingBody, RequestOptions as WasiRequestOptions};
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+use wasi::http::types::{
+    FutureIncomingResponse, IncomingResponse as WasiIncomingResponse, OutgoingBody,
+    OutgoingRequest, RequestOptions as WasiRequestOptions,
+};
+use wasi::io::poll::Pollable;
 
 /// An HTTP client.
 // Empty for now, but permits adding support for RequestOptions soon:
@@ -71,6 +78,37 @@ impl Client {
 
     fn wasi_options(&self) -> Result<Option<WasiRequestOptions>> {
         self.options.as_ref().map(|o| o.to_wasi()).transpose()
+    }
+}
+
+struct IncomingResponse {
+    subscription: Pollable,
+    parent: FutureIncomingResponse,
+}
+
+impl IncomingResponse {
+    pub fn new(request: OutgoingRequest, options: Option<WasiRequestOptions>) -> Result<Self> {
+        let parent = wasi::http::outgoing_handler::handle(request, options)?;
+        let subscription = parent.subscribe();
+        Ok(IncomingResponse {
+            subscription,
+            parent,
+        })
+    }
+
+    async fn wait(&self) -> Result<WasiIncomingResponse> {
+        Reactor::current().wait_for(self.subscription).await;
+        // NOTE: the first `unwrap` is to ensure readiness, the second `unwrap`
+        // is to trap if we try and get the response more than once. The final
+        // `?` is to raise the actual error if there is one.
+        Ok(self.parent.get().unwrap().unwrap()?)
+    }
+}
+
+impl Future for IncomingResponse {
+    type Output = Result<WasiIncomingResponse>;
+    fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        todo!()
     }
 }
 
