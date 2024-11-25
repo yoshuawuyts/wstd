@@ -4,10 +4,10 @@ use super::{
 };
 
 use core::cell::RefCell;
-use core::future;
-use core::task::Poll;
-use core::task::Waker;
+use core::future::Future;
+use core::task::{Context, Poll, Waker};
 use std::collections::HashMap;
+use std::pin::Pin;
 use std::rc::Rc;
 use wasi::io::poll::Pollable;
 
@@ -73,30 +73,63 @@ impl Reactor {
 
     /// Wait for the pollable to resolve.
     pub async fn wait_for(&self, pollable: &Pollable) {
-        let mut key = None;
-        // This function is the core loop of our function; it will be called
-        // multiple times as the future is resolving.
-        future::poll_fn(|cx| {
-            // Start by taking a lock on the reactor. This is single-threaded
-            // and short-lived, so it will never be contended.
-            let mut reactor = self.inner.borrow_mut();
+        WaitFor::new(self, pollable).await
+    }
+}
 
-            // Schedule interest in the `pollable` on the first iteration. On
-            // every iteration, register the waker with the reactor.
-            // Safety: caller of insert operation must remove key during lifetime of &Pollable.
-            let key = key.get_or_insert_with(|| unsafe { reactor.poller.insert(pollable) });
-            reactor.wakers.insert(*key, cx.waker().clone());
+#[must_use = "futures do nothing unless polled or .awaited"]
+struct WaitFor<'a> {
+    reactor: &'a Reactor,
+    key: Option<EventKey>,
+    pollable: &'a Pollable,
+}
 
-            // Check whether we're ready or need to keep waiting. If we're
-            // ready, we clean up after ourselves.
-            if pollable.ready() {
-                reactor.poller.remove(*key);
-                reactor.wakers.remove(key);
-                Poll::Ready(())
-            } else {
-                Poll::Pending
-            }
-        })
-        .await
+impl<'a> WaitFor<'a> {
+    fn new(reactor: &'a Reactor, pollable: &'a Pollable) -> Self {
+        WaitFor {
+            reactor,
+            key: None,
+            pollable,
+        }
+    }
+}
+
+impl<'a> Future for WaitFor<'a> {
+    type Output = ();
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<()> {
+        let mut this = self.as_mut();
+        // Start by taking a lock on the reactor. This is single-threaded
+        // and short-lived, so it will never be contended.
+        let mut reactor = this.reactor.inner.borrow_mut();
+
+        // Schedule interest in the `pollable` on the first iteration. On
+        // every iteration, register the waker with the reactor.
+        // Safety: caller of insert operation must remove key during lifetime of &Pollable.
+        if this.key.is_none() {
+            this.key = Some(unsafe { reactor.poller.insert(&this.pollable) });
+        }
+        let key = this.key.as_ref().unwrap();
+        reactor.wakers.insert(*key, cx.waker().clone());
+
+        // Check whether we're ready or need to keep waiting. If we're
+        // ready, we clean up after ourselves.
+        if this.pollable.ready() {
+            let key = this.key.take().unwrap();
+            reactor.poller.remove(key);
+            reactor.wakers.remove(&key);
+            Poll::Ready(())
+        } else {
+            Poll::Pending
+        }
+    }
+}
+
+impl<'a> Drop for WaitFor<'a> {
+    fn drop(&mut self) {
+        if let Some(key) = self.key {
+            let mut reactor = self.reactor.inner.borrow_mut();
+            reactor.poller.remove(key);
+            reactor.wakers.remove(&key);
+        }
     }
 }
