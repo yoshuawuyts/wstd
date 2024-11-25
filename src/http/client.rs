@@ -31,7 +31,7 @@ impl Client {
         let body_stream = wasi_body.write().unwrap();
 
         // 1. Start sending the request head
-        let res = wasi::http::outgoing_handler::handle(wasi_req, self.wasi_options()?).unwrap();
+        let res = IncomingResponse::new(wasi_req, self.wasi_options()?)?;
 
         // 2. Start sending the request body
         io::copy(body, OutputStream::new(body_stream))
@@ -43,11 +43,10 @@ impl Client {
         OutgoingBody::finish(wasi_body, trailers).unwrap();
 
         // 4. Receive the response
-        Reactor::current().wait_for(&res.subscribe()).await;
+        let res = res.await?;
         // NOTE: the first `unwrap` is to ensure readiness, the second `unwrap`
         // is to trap if we try and get the response more than once. The final
         // `?` is to raise the actual error if there is one.
-        let res = res.get().unwrap().unwrap()?;
         Ok(Response::try_from_incoming_response(res)?)
     }
 
@@ -87,7 +86,7 @@ struct IncomingResponse {
 }
 
 impl IncomingResponse {
-    pub fn new(request: OutgoingRequest, options: Option<WasiRequestOptions>) -> Result<Self> {
+    fn new(request: OutgoingRequest, options: Option<WasiRequestOptions>) -> Result<Self> {
         let parent = wasi::http::outgoing_handler::handle(request, options)?;
         let subscription = parent.subscribe();
         Ok(IncomingResponse {
@@ -97,7 +96,7 @@ impl IncomingResponse {
     }
 
     async fn wait(&self) -> Result<WasiIncomingResponse> {
-        Reactor::current().wait_for(self.subscription).await;
+        Reactor::current().wait_for(&self.subscription).await;
         // NOTE: the first `unwrap` is to ensure readiness, the second `unwrap`
         // is to trap if we try and get the response more than once. The final
         // `?` is to raise the actual error if there is one.
@@ -108,7 +107,10 @@ impl IncomingResponse {
 impl Future for IncomingResponse {
     type Output = Result<WasiIncomingResponse>;
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        todo!()
+        let this = self.as_ref();
+        let fut = this.wait();
+        let fut = std::pin::pin!(fut);
+        fut.poll(cx)
     }
 }
 
