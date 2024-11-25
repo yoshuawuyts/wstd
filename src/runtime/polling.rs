@@ -10,7 +10,7 @@ use wasi::io::poll::{poll, Pollable};
 /// Waits for I/O events.
 #[derive(Debug)]
 pub(crate) struct Poller {
-    pub(crate) targets: Slab<Pollable>,
+    pub(crate) targets: Slab<&'static Pollable>,
 }
 
 impl Poller {
@@ -27,21 +27,17 @@ impl Poller {
     }
 
     /// Insert a new `Pollable` target into `Poller`
-    pub(crate) fn insert(&mut self, target: Pollable) -> EventKey {
-        let key = self.targets.insert(target);
+    ///
+    /// Safety: Caller MUST remove the EventKey corresponding to this insert
+    /// during the lifetime of &Pollable.
+    pub(crate) unsafe fn insert(&mut self, target: &Pollable) -> EventKey {
+        let key = self.targets.insert(std::mem::transmute(target));
         EventKey(key as u32)
     }
 
-    /// Get a `Pollable` if it exists.
-    pub(crate) fn get(&self, key: &EventKey) -> Option<&Pollable> {
-        self.targets.get(key.0 as usize)
-    }
-
     /// Remove an instance of `Pollable` from `Poller`.
-    ///
-    /// Returns `None` if no entry was found for `key`.
-    pub(crate) fn remove(&mut self, key: EventKey) -> Option<Pollable> {
-        self.targets.try_remove(key.0 as usize)
+    pub(crate) fn remove(&mut self, key: EventKey) {
+        self.targets.try_remove(key.0 as usize);
     }
 
     /// Block the current thread until a new event has triggered.
@@ -58,7 +54,7 @@ impl Poller {
         let mut targets = Vec::with_capacity(self.targets.len());
         for (index, target) in self.targets.iter() {
             indexes.push(index);
-            targets.push(target);
+            targets.push(*target);
         }
 
         debug_assert_ne!(

@@ -113,7 +113,7 @@ impl AsyncRead for IncomingBody {
             None => {
                 // Wait for an event to be ready
                 let pollable = self.body_stream.subscribe();
-                Reactor::current().wait_for(pollable).await;
+                Reactor::current().wait_for(&pollable).await;
 
                 // Read the bytes from the body stream
                 let buf = match self.body_stream.read(CHUNK_SIZE) {
