@@ -26,10 +26,6 @@ wstd-macro.workspace = true
 anyhow.workspace = true
 futures-lite.workspace = true
 serde_json.workspace = true
-test-programs-artifacts.workspace = true
-wasmtime.workspace = true
-wasmtime-wasi.workspace = true
-wasmtime-wasi-http.workspace = true
 
 [workspace]
 members = [
@@ -57,6 +53,7 @@ quote = "1.0"
 serde_json = "1"
 slab = "0.4.9"
 syn = "2.0"
+test-log = { version = "0.2", features = ["trace"] }
 test-programs = { path = "test-programs" }
 test-programs-artifacts = { path = "test-programs/artifacts" }
 wasi = "0.13.1"

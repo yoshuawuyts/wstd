@@ -44,3 +44,42 @@ pub fn attr_macro_main(_attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     .into()
 }
+
+#[proc_macro_attribute]
+pub fn attr_macro_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(item as ItemFn);
+
+    if input.sig.asyncness.is_none() {
+        return quote_spanned! { input.sig.fn_token.span()=>
+            compile_error!("fn must be `async fn`");
+        }
+        .into();
+    }
+
+    let name = input.sig.ident;
+
+    if !input.sig.inputs.is_empty() {
+        return quote_spanned! { input.sig.inputs.span()=>
+            compile_error!("arguments to main are not supported");
+        }
+        .into();
+    }
+    let attrs = input.attrs;
+    let output = input.sig.output;
+    let block = input.block;
+    quote! {
+        #[test]
+        pub fn #name() #output {
+
+            #(#attrs)*
+            async fn __run() #output {
+                #block
+            }
+
+            ::wstd::runtime::block_on(async {
+                __run().await
+            })
+        }
+    }
+    .into()
+}

@@ -29,17 +29,27 @@ jobs:
         target: wasm32-wasip2
         override: true
 
+    - name: Install wasmtime
+      uses: bytecodealliance/actions/wasmtime/setup@v1
+
     - name: check
       uses: actions-rs/cargo@v1
       with:
         command: check
         args: --all --bins --examples
 
-    - name: tests
+    - name: wstd tests
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --all
+        args: -p wstd --target wasm32-wasip2
+
+    - name: example tests
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: -p test-programs-artifacts
+
 
   check_fmt_and_docs:
     name: Checking fmt and docs

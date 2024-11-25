@@ -23,7 +23,7 @@
 //! **HTTP Client**
 //!
 //! ```rust,no_run
-#![doc = include_str!("../examples/http_get.rs")]
+#![doc = include_str!("../tests/http_get.rs")]
 //! ```
 //!
 //! # Design Decisions
@@ -59,6 +59,7 @@ pub mod task;
 pub mod time;
 
 pub use wstd_macro::attr_macro_main as main;
+pub use wstd_macro::attr_macro_test as test;
 
 pub mod prelude {
     pub use crate::future::FutureExt as _;

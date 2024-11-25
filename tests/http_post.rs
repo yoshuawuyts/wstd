@@ -2,7 +2,7 @@ use std::error::Error;
 use wstd::http::{Client, HeaderValue, Method, Request};
 use wstd::io::AsyncRead;
 
-#[wstd::main]
+#[wstd::test]
 async fn main() -> Result<(), Box<dyn Error>> {
     let mut request = Request::new(Method::POST, "https://postman-echo.com/post".parse()?);
     request.headers_mut().insert(
