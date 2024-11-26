@@ -7,6 +7,14 @@ publish = false
 
 [dependencies]
 
+[dev-dependencies]
+anyhow.workspace = true
+test-log.workspace = true
+test-programs-artifacts.workspace = true
+wasmtime.workspace = true
+wasmtime-wasi.workspace = true
+wasmtime-wasi-http.workspace = true
+
 [build-dependencies]
 cargo_metadata.workspace = true
 heck.workspace = true
