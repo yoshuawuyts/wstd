@@ -82,3 +82,43 @@ impl Poller {
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub(crate) struct EventKey(pub(crate) u32);
+
+pub struct AsyncPollable {
+    inner: Option<wasi::io::poll::Pollable>,
+    registration: Registration,
+}
+
+impl AsyncPollable {
+    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<()> {
+        if self.inner.as_ref().unwrap().ready() {
+            self.registration.remove_from_wait_list();
+            return std::task::Poll::Ready(());
+        }
+        self.registration.add_to_wait_list(cx);
+        std::task::Poll::Pending
+    }
+}
+
+impl Drop for AsyncPollable {
+    fn drop(&mut self) {
+        self.registration.remove_from_wait_list();
+        self.inner.take();
+    }
+}
+
+pub struct Registration {
+    reactor: super::Reactor,
+    registration: Option<EventKey>,
+}
+
+impl Registration {
+    fn add_to_wait_list(&self, cx: &mut std::task::Context<'_>) {
+        // Tell reactor to put &self.inner on the waiting list
+        //
+    }
+    fn remove_from_wait_list(&self) {
+        // Tell reactor to remove from waiting list, using th eevent key.
+        //
+    }
+}
+// In the reactor theres a map of known pollables that need polling (waiting list)
