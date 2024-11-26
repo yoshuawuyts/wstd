@@ -6,12 +6,9 @@ documentation = "https://docs.rs/wstd"
 description = "An async standard library for Wasm Components and WASI 0.2"
 readme = "README.md"
 edition.workspace = true
-keywords = ["WebAssembly", "async", "stdlib", "Components"]
-categories = []
-authors = [
-    "Yoshua Wuyts <rust@yosh.is>",
-    "Pat Hickey <pat@moreproductive.org>",
-]
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [features]
 
@@ -41,6 +38,12 @@ version = "0.5.0-draft1"
 edition = "2021"
 license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/yoshuawuyts/wstd"
+keywords = ["WebAssembly", "async", "stdlib", "Components"]
+categories = []
+authors = [
+    "Yoshua Wuyts <rust@yosh.is>",
+    "Pat Hickey <pat@moreproductive.org>",
+]
 
 [workspace.dependencies]
 anyhow = "1"
