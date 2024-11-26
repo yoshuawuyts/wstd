@@ -2,8 +2,8 @@ use wstd::future::FutureExt;
 use wstd::http::{Client, Method, Request};
 use wstd::time::Duration;
 
-#[wstd::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[wstd::test]
+async fn http_timeout() -> Result<(), Box<dyn std::error::Error>> {
     // This get request will connect to the server, which will then wait 1 second before
     // returning a response.
     let request = Request::new(Method::GET, "https://postman-echo.com/delay/1".parse()?);

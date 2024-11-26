@@ -26,11 +26,6 @@ wstd-macro.workspace = true
 anyhow.workspace = true
 futures-lite.workspace = true
 serde_json.workspace = true
-test-log.workspace = true
-test-programs-artifacts.workspace = true
-wasmtime.workspace = true
-wasmtime-wasi.workspace = true
-wasmtime-wasi-http.workspace = true
 
 [workspace]
 members = [
