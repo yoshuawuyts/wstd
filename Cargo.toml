@@ -9,7 +9,8 @@ edition.workspace = true
 keywords = ["WebAssembly", "async", "stdlib", "Components"]
 categories = []
 authors = [
-    "Yoshua Wuyts <rust@yosh.is>"
+    "Yoshua Wuyts <rust@yosh.is>",
+    "Pat Hickey <pat@moreproductive.org>",
 ]
 
 [features]
@@ -36,7 +37,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.4.0"
+version = "0.5.0-draft1"
 edition = "2021"
 license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/yoshuawuyts/wstd"
