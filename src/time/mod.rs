@@ -67,7 +67,7 @@ impl Timer {
         match self.0 {
             Some(deadline) => {
                 Reactor::current()
-                    .wait_for(subscribe_instant(*deadline))
+                    .wait_for(&subscribe_instant(*deadline))
                     .await
             }
             None => std::future::pending().await,

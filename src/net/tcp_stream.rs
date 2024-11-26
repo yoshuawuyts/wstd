@@ -30,7 +30,7 @@ impl TcpStream {
 
 impl AsyncRead for TcpStream {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        Reactor::current().wait_for(self.input.subscribe()).await;
+        Reactor::current().wait_for(&self.input.subscribe()).await;
         let slice = match self.input.read(buf.len() as u64) {
             Ok(slice) => slice,
             Err(StreamError::Closed) => return Ok(0),
@@ -44,7 +44,7 @@ impl AsyncRead for TcpStream {
 
 impl AsyncRead for &TcpStream {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        Reactor::current().wait_for(self.input.subscribe()).await;
+        Reactor::current().wait_for(&self.input.subscribe()).await;
         let slice = match self.input.read(buf.len() as u64) {
             Ok(slice) => slice,
             Err(StreamError::Closed) => return Ok(0),
@@ -58,7 +58,7 @@ impl AsyncRead for &TcpStream {
 
 impl AsyncWrite for TcpStream {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        Reactor::current().wait_for(self.output.subscribe()).await;
+        Reactor::current().wait_for(&self.output.subscribe()).await;
         self.output.write(buf).map_err(to_io_err)?;
         Ok(buf.len())
     }
@@ -70,7 +70,7 @@ impl AsyncWrite for TcpStream {
 
 impl AsyncWrite for &TcpStream {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        Reactor::current().wait_for(self.output.subscribe()).await;
+        Reactor::current().wait_for(&self.output.subscribe()).await;
         self.output.write(buf).map_err(to_io_err)?;
         Ok(buf.len())
     }

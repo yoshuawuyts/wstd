@@ -72,8 +72,7 @@ impl Reactor {
     }
 
     /// Wait for the pollable to resolve.
-    pub async fn wait_for(&self, pollable: Pollable) {
-        let mut pollable = Some(pollable);
+    pub async fn wait_for(&self, pollable: &Pollable) {
         let mut key = None;
         // This function is the core loop of our function; it will be called
         // multiple times as the future is resolving.
@@ -84,12 +83,13 @@ impl Reactor {
 
             // Schedule interest in the `pollable` on the first iteration. On
             // every iteration, register the waker with the reactor.
-            let key = key.get_or_insert_with(|| reactor.poller.insert(pollable.take().unwrap()));
+            // Safety: caller of insert operation must remove key during lifetime of &Pollable.
+            let key = key.get_or_insert_with(|| unsafe { reactor.poller.insert(pollable) });
             reactor.wakers.insert(*key, cx.waker().clone());
 
             // Check whether we're ready or need to keep waiting. If we're
             // ready, we clean up after ourselves.
-            if reactor.poller.get(key).unwrap().ready() {
+            if pollable.ready() {
                 reactor.poller.remove(*key);
                 reactor.wakers.remove(key);
                 Poll::Ready(())

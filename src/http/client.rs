@@ -36,7 +36,7 @@ impl Client {
         OutgoingBody::finish(wasi_body, trailers).unwrap();
 
         // 4. Receive the response
-        Reactor::current().wait_for(res.subscribe()).await;
+        Reactor::current().wait_for(&res.subscribe()).await;
         // NOTE: the first `unwrap` is to ensure readiness, the second `unwrap`
         // is to trap if we try and get the response more than once. The final
         // `?` is to raise the actual error if there is one.
@@ -90,13 +90,13 @@ impl AsyncWrite for OutputStream {
         let max = max.min(buf.len());
         let buf = &buf[0..max];
         self.stream.write(buf).unwrap();
-        Reactor::current().wait_for(self.stream.subscribe()).await;
+        Reactor::current().wait_for(&self.stream.subscribe()).await;
         Ok(max)
     }
 
     async fn flush(&mut self) -> io::Result<()> {
         self.stream.flush().unwrap();
-        Reactor::current().wait_for(self.stream.subscribe()).await;
+        Reactor::current().wait_for(&self.stream.subscribe()).await;
         Ok(())
     }
 }

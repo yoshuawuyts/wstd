@@ -45,11 +45,11 @@ impl TcpListener {
         socket
             .start_bind(&network, local_address)
             .map_err(to_io_err)?;
-        reactor.wait_for(socket.subscribe()).await;
+        reactor.wait_for(&socket.subscribe()).await;
         socket.finish_bind().map_err(to_io_err)?;
 
         socket.start_listen().map_err(to_io_err)?;
-        reactor.wait_for(socket.subscribe()).await;
+        reactor.wait_for(&socket.subscribe()).await;
         socket.finish_listen().map_err(to_io_err)?;
         Ok(Self { socket })
     }
@@ -78,7 +78,7 @@ impl<'a> AsyncIterator for Incoming<'a> {
 
     async fn next(&mut self) -> Option<Self::Item> {
         Reactor::current()
-            .wait_for(self.listener.socket.subscribe())
+            .wait_for(&self.listener.socket.subscribe())
             .await;
         let (socket, input, output) = match self.listener.socket.accept().map_err(to_io_err) {
             Ok(accepted) => accepted,
