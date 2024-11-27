@@ -30,11 +30,20 @@ impl TcpStream {
 
 impl AsyncRead for TcpStream {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        Reactor::current().wait_for(self.input.subscribe()).await;
-        let slice = match self.input.read(buf.len() as u64) {
-            Ok(slice) => slice,
-            Err(StreamError::Closed) => return Ok(0),
-            Err(e) => return Err(to_io_err(e)),
+        // workaround for unexpected stream break. https://github.com/bytecodealliance/wasmtime/issues/9667
+        let reactor = Reactor::current();
+        let slice = loop {
+            reactor.wait_for(self.input.subscribe()).await;
+            match self.input.read(buf.len() as u64) {
+                Ok(slice) => {
+                    if slice.is_empty() {
+                        continue;
+                    }
+                    break slice;
+                }
+                Err(StreamError::Closed) => return Ok(0),
+                Err(e) => return Err(to_io_err(e)),
+            };
         };
         let bytes_read = slice.len();
         buf[..bytes_read].clone_from_slice(&slice);
@@ -44,11 +53,20 @@ impl AsyncRead for TcpStream {
 
 impl AsyncRead for &TcpStream {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        Reactor::current().wait_for(self.input.subscribe()).await;
-        let slice = match self.input.read(buf.len() as u64) {
-            Ok(slice) => slice,
-            Err(StreamError::Closed) => return Ok(0),
-            Err(e) => return Err(to_io_err(e)),
+        // workaround for unexpected stream break. https://github.com/bytecodealliance/wasmtime/issues/9667
+        let reactor = Reactor::current();
+        let slice = loop {
+            reactor.wait_for(self.input.subscribe()).await;
+            match self.input.read(buf.len() as u64) {
+                Ok(slice) => {
+                    if slice.is_empty() {
+                        continue;
+                    }
+                    break slice;
+                }
+                Err(StreamError::Closed) => return Ok(0),
+                Err(e) => return Err(to_io_err(e)),
+            };
         };
         let bytes_read = slice.len();
         buf[..bytes_read].clone_from_slice(&slice);
