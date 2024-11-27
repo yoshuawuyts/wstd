@@ -24,6 +24,7 @@ wstd-macro.workspace = true
 anyhow.workspace = true
 futures-lite.workspace = true
 serde_json.workspace = true
+futures.workspace = true
 
 [workspace]
 members = [
@@ -50,6 +51,7 @@ anyhow = "1"
 cargo_metadata = "0.18.1"
 futures-core = "0.3.19"
 futures-lite = "1.12.0"
+futures = "0.3.31"
 heck = "0.5"
 http = "1.1"
 pin-project-lite = "0.2.8"
