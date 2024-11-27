@@ -103,16 +103,18 @@ fn tcp_echo_server() -> Result<()> {
 
     const MESSAGE: &[u8] = b"hello, echoserver!\n";
 
-    tcpstream.write_all(MESSAGE).context("write to socket")?;
-    println!("wrote to echo server");
+    let n = 2;
+    for _ in 0..n {
+        tcpstream.write_all(MESSAGE).context("write to socket")?;
+        println!("wrote to echo server");
 
-    let mut readback = Vec::new();
-    tcpstream
-        .read_to_end(&mut readback)
-        .context("read from socket")?;
+        let mut buf = [0; 1024];
+        let n = tcpstream.read(&mut buf).context("read from socket")?;
+        let readback = &buf[..n];
 
-    println!("read from wasm server");
-    assert_eq!(MESSAGE, readback);
+        println!("read from wasm server");
+        assert_eq!(MESSAGE, readback);
+    }
 
     if wasmtime_thread.is_finished() {
         wasmtime_thread.join().expect("wasmtime panicked")?;
