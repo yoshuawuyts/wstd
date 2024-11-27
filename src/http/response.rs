@@ -111,19 +111,24 @@ impl AsyncRead for IncomingBody {
         let buf = match &mut self.buf {
             Some(ref mut buf) => buf,
             None => {
-                // Wait for an event to be ready
-                let pollable = self.body_stream.subscribe();
-                Reactor::current().wait_for(pollable).await;
-
-                // Read the bytes from the body stream
-                let buf = match self.body_stream.read(CHUNK_SIZE) {
-                    Ok(buf) => buf,
-                    Err(StreamError::Closed) => return Ok(0),
-                    Err(StreamError::LastOperationFailed(err)) => {
-                        return Err(std::io::Error::other(format!(
-                            "last operation failed: {}",
-                            err.to_debug_string()
-                        )))
+                // workaround for unexpected stream break. https://github.com/bytecodealliance/wasmtime/issues/9667
+                let reactor = Reactor::current();
+                let buf = loop {
+                    reactor.wait_for(self.body_stream.subscribe()).await;
+                    match self.body_stream.read(CHUNK_SIZE) {
+                        Ok(buf) => {
+                            if buf.is_empty() {
+                                continue;
+                            }
+                            break buf;
+                        }
+                        Err(StreamError::Closed) => return Ok(0),
+                        Err(StreamError::LastOperationFailed(err)) => {
+                            return Err(std::io::Error::other(format!(
+                                "last operation failed: {}",
+                                err.to_debug_string()
+                            )))
+                        }
                     }
                 };
                 self.buf.insert(buf)
