@@ -1,4 +1,5 @@
-use futures::{stream::FuturesUnordered, FutureExt, StreamExt};
+use futures_concurrency::future::FutureGroup;
+use futures_lite::{FutureExt, StreamExt};
 use std::{
     cell::RefCell,
     future::Future,
@@ -10,7 +11,7 @@ use wstd::io;
 use wstd::iter::AsyncIterator;
 use wstd::net::TcpListener;
 
-type StreamTasks = Rc<RefCell<FuturesUnordered<Pin<Box<dyn Future<Output = io::Result<()>>>>>>>;
+type StreamTasks = Rc<RefCell<FutureGroup<Pin<Box<dyn Future<Output = io::Result<()>>>>>>>;
 
 #[wstd::main]
 async fn main() -> io::Result<()> {
@@ -21,13 +22,13 @@ async fn main() -> io::Result<()> {
     let stream_tasks: StreamTasks = StreamTasks::default();
     let mut listening_task = pin!(start_listening(listener, stream_tasks.clone()));
 
-    futures::future::poll_fn(|cx| {
+    futures_lite::future::poll_fn(|cx| {
         if let Poll::Ready(_) = listening_task.as_mut().poll(cx) {
             return Poll::Ready(());
         };
 
         let mut stream_tasks_ref = stream_tasks.borrow_mut();
-        if let Poll::Ready(Some(res)) = stream_tasks_ref.poll_next_unpin(cx) {
+        if let Poll::Ready(Some(res)) = stream_tasks_ref.poll_next(cx) {
             println!("Task finished: {:?}", res);
             println!("Tasks len: {}", stream_tasks_ref.len());
         }
@@ -46,7 +47,7 @@ async fn start_listening(listener: TcpListener, stream_tasks: StreamTasks) -> io
 
         let stream_task = async move { io::copy(&stream, &stream).await }.boxed_local();
 
-        stream_tasks.borrow_mut().push(stream_task);
+        stream_tasks.borrow_mut().insert(stream_task);
         println!("Task added");
         println!("Tasks len: {}", stream_tasks.borrow().len());
     }

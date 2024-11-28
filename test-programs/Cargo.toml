@@ -8,4 +8,4 @@ publish = false
 futures-lite.workspace = true
 serde_json.workspace = true
 wstd.workspace = true
-futures.workspace = true
+futures-concurrency.workspace = true
