@@ -49,6 +49,7 @@
 //! is specific to that are exposed from here.
 
 pub mod future;
+#[macro_use]
 pub mod http;
 pub mod io;
 pub mod iter;
