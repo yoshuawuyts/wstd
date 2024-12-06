@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasi::io::poll::Pollable;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 struct Registration {
     key: EventKey,
 }
@@ -22,7 +22,7 @@ impl Drop for Registration {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AsyncPollable(Rc<Registration>);
 
 impl AsyncPollable {
@@ -30,9 +30,11 @@ impl AsyncPollable {
         use std::sync::atomic::{AtomicUsize, Ordering};
         static COUNTER: AtomicUsize = AtomicUsize::new(0);
         let unique = COUNTER.fetch_add(1, Ordering::Relaxed);
-        let key = self.0.key;
         WaitFor {
-            waitee: Waitee { key, unique },
+            waitee: Waitee {
+                pollable: self.clone(),
+                unique,
+            },
             needs_deregistration: false,
         }
     }
@@ -40,7 +42,7 @@ impl AsyncPollable {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct Waitee {
-    key: EventKey,
+    pollable: AsyncPollable,
     unique: usize,
 }
 
@@ -125,7 +127,7 @@ impl Reactor {
         let mut reactor = self.inner.borrow_mut();
         for key in reactor.poller.block_until() {
             for (waitee, waker) in reactor.wakers.iter() {
-                if waitee.key == key {
+                if waitee.pollable.0.key == key {
                     waker.wake_by_ref()
                 }
             }
@@ -156,7 +158,7 @@ impl Reactor {
         let mut reactor = self.inner.borrow_mut();
         let ready = reactor
             .poller
-            .get(&waitee.key)
+            .get(&waitee.pollable.0.key)
             .expect("only live EventKey can be checked for readiness")
             .ready();
         if !ready {
