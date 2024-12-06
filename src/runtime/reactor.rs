@@ -5,11 +5,71 @@ use super::{
 
 use core::cell::RefCell;
 use core::future;
-use core::task::Poll;
-use core::task::Waker;
+use core::pin::Pin;
+use core::task::{Context, Poll, Waker};
 use std::collections::HashMap;
 use std::rc::Rc;
 use wasi::io::poll::Pollable;
+
+#[derive(Debug)]
+struct Registration {
+    key: EventKey,
+}
+
+impl Drop for Registration {
+    fn drop(&mut self) {
+        Reactor::current().deregister_event(self.key)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct AsyncPollable(Rc<Registration>);
+
+impl AsyncPollable {
+    pub fn wait_for(&self) -> WaitFor {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static COUNTER: AtomicUsize = AtomicUsize::new(0);
+        let unique = COUNTER.fetch_add(1, Ordering::Relaxed);
+        let key = self.0.key;
+        WaitFor {
+            waitee: Waitee { key, unique },
+            needs_deregistration: false,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+struct Waitee {
+    key: EventKey,
+    unique: usize,
+}
+
+#[must_use = "futures do nothing unless polled or .awaited"]
+#[derive(Debug)]
+pub struct WaitFor {
+    waitee: Waitee,
+    needs_deregistration: bool,
+}
+impl future::Future for WaitFor {
+    type Output = ();
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        let reactor = Reactor::current();
+        if reactor.ready(&self.as_ref().waitee, cx.waker()) {
+            Poll::Ready(())
+        } else {
+            self.as_mut().needs_deregistration = true;
+            Poll::Pending
+        }
+    }
+}
+impl Drop for WaitFor {
+    fn drop(&mut self) {
+        println!("dropping {:?}", self);
+        if self.needs_deregistration {
+            Reactor::current().deregister_waitee(&self.waitee)
+        }
+    }
+}
 
 /// Manage async system resources for WASI 0.2
 #[derive(Debug, Clone)]
@@ -22,7 +82,7 @@ pub struct Reactor {
 #[derive(Debug)]
 struct InnerReactor {
     poller: Poller,
-    wakers: HashMap<EventKey, Waker>,
+    wakers: HashMap<Waitee, Waker>,
 }
 
 impl Reactor {
@@ -64,39 +124,52 @@ impl Reactor {
     pub(crate) fn block_until(&self) {
         let mut reactor = self.inner.borrow_mut();
         for key in reactor.poller.block_until() {
-            match reactor.wakers.get(&key) {
-                Some(waker) => waker.wake_by_ref(),
-                None => panic!("tried to wake the waker for non-existent `{:?}`", key),
+            for (waitee, waker) in reactor.wakers.iter() {
+                if waitee.key == key {
+                    waker.wake_by_ref()
+                }
             }
         }
     }
 
+    /// Turn a wasi [`Pollable`] into an [`AsyncPollable`]
+    pub fn schedule(&self, pollable: Pollable) -> AsyncPollable {
+        let mut reactor = self.inner.borrow_mut();
+        let key = reactor.poller.insert(pollable);
+        println!("schedule pollable as {key:?}");
+        AsyncPollable(Rc::new(Registration { key }))
+    }
+
+    fn deregister_event(&self, key: EventKey) {
+        let mut reactor = self.inner.borrow_mut();
+        println!("deregister {key:?}",);
+        reactor.poller.remove(key);
+    }
+
+    fn deregister_waitee(&self, waitee: &Waitee) {
+        let mut reactor = self.inner.borrow_mut();
+        println!("deregister waker for {waitee:?}",);
+        reactor.wakers.remove(waitee);
+    }
+
+    fn ready(&self, waitee: &Waitee, waker: &Waker) -> bool {
+        let mut reactor = self.inner.borrow_mut();
+        let ready = reactor
+            .poller
+            .get(&waitee.key)
+            .expect("only live EventKey can be checked for readiness")
+            .ready();
+        if !ready {
+            println!("register waker for {waitee:?}");
+            reactor.wakers.insert(waitee.clone(), waker.clone());
+        }
+        println!("ready {ready} {waitee:?}");
+        ready
+    }
+
     /// Wait for the pollable to resolve.
     pub async fn wait_for(&self, pollable: Pollable) {
-        let mut pollable = Some(pollable);
-        let mut key = None;
-        // This function is the core loop of our function; it will be called
-        // multiple times as the future is resolving.
-        future::poll_fn(|cx| {
-            // Start by taking a lock on the reactor. This is single-threaded
-            // and short-lived, so it will never be contended.
-            let mut reactor = self.inner.borrow_mut();
-
-            // Schedule interest in the `pollable` on the first iteration. On
-            // every iteration, register the waker with the reactor.
-            let key = key.get_or_insert_with(|| reactor.poller.insert(pollable.take().unwrap()));
-            reactor.wakers.insert(*key, cx.waker().clone());
-
-            // Check whether we're ready or need to keep waiting. If we're
-            // ready, we clean up after ourselves.
-            if reactor.poller.get(key).unwrap().ready() {
-                reactor.poller.remove(*key);
-                reactor.wakers.remove(key);
-                Poll::Ready(())
-            } else {
-                Poll::Pending
-            }
-        })
-        .await
+        let p = self.schedule(pollable);
+        p.wait_for().await
     }
 }
