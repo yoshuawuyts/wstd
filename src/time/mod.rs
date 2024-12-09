@@ -10,9 +10,15 @@ pub use instant::Instant;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use wasi::clocks::{monotonic_clock::subscribe_instant, wall_clock};
+use wasi::clocks::{
+    monotonic_clock::{subscribe_duration, subscribe_instant},
+    wall_clock,
+};
 
-use crate::{iter::AsyncIterator, runtime::Reactor};
+use crate::{
+    iter::AsyncIterator,
+    runtime::{AsyncPollable, Reactor},
+};
 
 /// A measurement of the system clock, useful for talking to external entities
 /// like the file system or other processes.
@@ -47,28 +53,26 @@ impl AsyncIterator for Interval {
 }
 
 #[derive(Debug)]
-pub struct Timer(Option<Instant>);
+pub struct Timer(Option<AsyncPollable>);
 
 impl Timer {
     pub fn never() -> Timer {
         Timer(None)
     }
     pub fn at(deadline: Instant) -> Timer {
-        Timer(Some(deadline))
+        let pollable = Reactor::current().schedule(subscribe_instant(*deadline));
+        Timer(Some(pollable))
     }
     pub fn after(duration: Duration) -> Timer {
-        Timer(Some(Instant::now() + duration))
+        let pollable = Reactor::current().schedule(subscribe_duration(*duration));
+        Timer(Some(pollable))
     }
     pub fn set_after(&mut self, duration: Duration) {
         *self = Self::after(duration);
     }
     pub async fn wait(&self) {
-        match self.0 {
-            Some(deadline) => {
-                Reactor::current()
-                    .wait_for(subscribe_instant(*deadline))
-                    .await
-            }
+        match &self.0 {
+            Some(pollable) => pollable.wait_for().await,
             None => std::future::pending().await,
         }
     }
@@ -89,4 +93,16 @@ impl Future for Timer {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn timer_now() {
+        crate::runtime::block_on(async {
+            let start = Instant::now();
+            let timer = Timer::at(start);
+            let now = timer.await;
+            let d = now.duration_since(start);
+            let d: std::time::Duration = d.into();
+            println!("timer_now awaited for {} s", d.as_secs_f32());
+        });
+    }
 }
