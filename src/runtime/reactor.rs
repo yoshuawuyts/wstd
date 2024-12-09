@@ -69,7 +69,6 @@ impl future::Future for WaitFor {
 }
 impl Drop for WaitFor {
     fn drop(&mut self) {
-        println!("dropping {:?}", self);
         if self.needs_deregistration {
             Reactor::current().deregister_waitee(&self.waitee)
         }
@@ -149,7 +148,6 @@ impl Reactor {
             "Attempting to block on an empty list of pollables - without any pending work, no progress can be made and wasi::io::poll::poll will trap"
         );
 
-        println!("polling for {indexes:?}");
         // Now that we have that association, we're ready to poll our targets.
         // This will block until an event has completed.
         let ready_indexes = wasi::io::poll::poll(&targets);
@@ -165,30 +163,26 @@ impl Reactor {
         for key in ready_keys {
             for (waitee, waker) in reactor.wakers.iter() {
                 if waitee.pollable.0.key == key {
-                    println!("waking {key:?}");
                     waker.wake_by_ref()
                 }
             }
         }
     }
 
-    /// Turn a wasi [`Pollable`] into an [`AsyncPollable`]
+    /// Turn a Wasi [`Pollable`] into an [`AsyncPollable`]
     pub fn schedule(&self, pollable: Pollable) -> AsyncPollable {
         let mut reactor = self.inner.borrow_mut();
         let key = EventKey(reactor.pollables.insert(pollable));
-        println!("schedule pollable as {key:?}");
         AsyncPollable(Rc::new(Registration { key }))
     }
 
     fn deregister_event(&self, key: EventKey) {
         let mut reactor = self.inner.borrow_mut();
-        println!("deregister {key:?}",);
         reactor.pollables.remove(key.0);
     }
 
     fn deregister_waitee(&self, waitee: &Waitee) {
         let mut reactor = self.inner.borrow_mut();
-        println!("deregister waker for {waitee:?}",);
         reactor.wakers.remove(waitee);
     }
 
@@ -200,10 +194,8 @@ impl Reactor {
             .expect("only live EventKey can be checked for readiness")
             .ready();
         if !ready {
-            println!("register waker for {waitee:?}");
             reactor.wakers.insert(waitee.clone(), waker.clone());
         }
-        println!("ready {ready} {waitee:?}");
         ready
     }
 

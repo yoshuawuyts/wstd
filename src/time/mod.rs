@@ -42,8 +42,7 @@ impl AsyncIterator for Interval {
     type Item = Instant;
 
     async fn next(&mut self) -> Option<Self::Item> {
-        Timer::after(self.duration).await;
-        Some(Instant::now())
+        Some(Timer::after(self.duration).await)
     }
 }
 
@@ -85,4 +84,9 @@ impl Future for Timer {
             Poll::Ready(()) => Poll::Ready(Instant::now()),
         }
     }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
 }
