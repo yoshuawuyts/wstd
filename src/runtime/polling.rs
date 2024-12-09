@@ -75,10 +75,10 @@ impl Poller {
         // to convert it back to the right keys for the wakers. Earlier we
         // established a positional index -> waker key relationship, so we can
         // go right ahead and perform a lookup there.
-        ready_indexes
+        dbg!(ready_indexes
             .into_iter()
             .map(|index| EventKey(indexes[index as usize] as u32))
-            .collect()
+            .collect())
     }
 }
 

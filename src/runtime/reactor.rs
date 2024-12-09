@@ -128,6 +128,7 @@ impl Reactor {
         for key in reactor.poller.block_until() {
             for (waitee, waker) in reactor.wakers.iter() {
                 if waitee.pollable.0.key == key {
+                    println!("waking {key:?}");
                     waker.wake_by_ref()
                 }
             }
@@ -173,5 +174,19 @@ impl Reactor {
     pub async fn wait_for(&self, pollable: Pollable) {
         let p = self.schedule(pollable);
         p.wait_for().await
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn reactor_subscribe_duration() {
+        crate::runtime::block_on(async {
+            let reactor = Reactor::current();
+            let pollable = wasi::clocks::monotonic_clock::subscribe_duration(1000);
+            let sched = reactor.schedule(pollable);
+            sched.wait_for().await;
+        })
     }
 }
