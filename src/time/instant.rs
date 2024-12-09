@@ -1,5 +1,4 @@
-use super::Duration;
-use crate::task::SleepUntil;
+use super::{Duration, Wait};
 use std::future::IntoFuture;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use wasi::clocks::monotonic_clock;
@@ -85,7 +84,7 @@ impl std::ops::DerefMut for Instant {
 impl IntoFuture for Instant {
     type Output = Instant;
 
-    type IntoFuture = SleepUntil;
+    type IntoFuture = Wait;
 
     fn into_future(self) -> Self::IntoFuture {
         crate::task::sleep_until(self)

@@ -7,6 +7,7 @@ mod instant;
 pub use duration::Duration;
 pub use instant::Instant;
 
+use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -48,7 +49,7 @@ impl AsyncIterator for Interval {
     type Item = Instant;
 
     async fn next(&mut self) -> Option<Self::Item> {
-        Some(Timer::after(self.duration).await)
+        Some(Timer::after(self.duration).wait().await)
     }
 }
 
@@ -70,21 +71,33 @@ impl Timer {
     pub fn set_after(&mut self, duration: Duration) {
         *self = Self::after(duration);
     }
-    pub async fn wait(&self) -> Instant {
-        match &self.0 {
-            Some(pollable) => pollable.wait_for().await,
-            None => std::future::pending().await,
-        }
-        Instant::now()
+    pub fn wait(&self) -> Wait {
+        let wait_for = self.0.as_ref().map(|pollable| pollable.wait_for());
+        Wait { wait_for }
     }
 }
 
-impl Future for Timer {
+pin_project! {
+    /// Future created by [`Timer::wait`]
+    #[must_use = "futures do nothing unless polled or .awaited"]
+    pub struct Wait {
+        #[pin]
+        wait_for: Option<crate::runtime::WaitFor>
+    }
+}
+
+impl Future for Wait {
     type Output = Instant;
+
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let this = self.as_ref();
-        let pinned = std::pin::pin!(this.wait());
-        pinned.poll(cx)
+        let this = self.project();
+        match this.wait_for.as_pin_mut() {
+            None => Poll::Pending,
+            Some(f) => match f.poll(cx) {
+                Poll::Pending => Poll::Pending,
+                Poll::Ready(()) => Poll::Ready(Instant::now()),
+            },
+        }
     }
 }
 
@@ -103,14 +116,14 @@ mod test {
     #[test]
     fn timer_now() {
         crate::runtime::block_on(debug_duration("timer_now", async {
-            Timer::at(Instant::now()).await
+            Timer::at(Instant::now()).wait().await
         }));
     }
 
     #[test]
     fn timer_after_100_milliseconds() {
         crate::runtime::block_on(debug_duration("timer_after_100_milliseconds", async {
-            Timer::after(Duration::from_millis(100)).await
+            Timer::after(Duration::from_millis(100)).wait().await
         }));
     }
 }
