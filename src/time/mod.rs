@@ -70,11 +70,12 @@ impl Timer {
     pub fn set_after(&mut self, duration: Duration) {
         *self = Self::after(duration);
     }
-    pub async fn wait(&self) {
+    pub async fn wait(&self) -> Instant {
         match &self.0 {
             Some(pollable) => pollable.wait_for().await,
             None => std::future::pending().await,
         }
+        Instant::now()
     }
 }
 
@@ -83,10 +84,7 @@ impl Future for Timer {
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
         let this = self.as_ref();
         let pinned = std::pin::pin!(this.wait());
-        match pinned.poll(cx) {
-            Poll::Pending => Poll::Pending,
-            Poll::Ready(()) => Poll::Ready(Instant::now()),
-        }
+        pinned.poll(cx)
     }
 }
 
@@ -94,15 +92,25 @@ impl Future for Timer {
 mod test {
     use super::*;
 
+    async fn debug_duration(what: &str, f: impl Future<Output = Instant>) {
+        let start = Instant::now();
+        let now = f.await;
+        let d = now.duration_since(start);
+        let d: std::time::Duration = d.into();
+        println!("{what} awaited for {} s", d.as_secs_f32());
+    }
+
     #[test]
     fn timer_now() {
-        crate::runtime::block_on(async {
-            let start = Instant::now();
-            let timer = Timer::at(start);
-            let now = timer.await;
-            let d = now.duration_since(start);
-            let d: std::time::Duration = d.into();
-            println!("timer_now awaited for {} s", d.as_secs_f32());
-        });
+        crate::runtime::block_on(debug_duration("timer_now", async {
+            Timer::at(Instant::now()).await
+        }));
+    }
+
+    #[test]
+    fn timer_after_100_milliseconds() {
+        crate::runtime::block_on(debug_duration("timer_after_100_milliseconds", async {
+            Timer::after(Duration::from_millis(100)).await
+        }));
     }
 }
