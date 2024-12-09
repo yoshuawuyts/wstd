@@ -1,15 +1,18 @@
-use super::{
-    polling::{EventKey, Poller},
-    REACTOR,
-};
+use super::REACTOR;
 
 use core::cell::RefCell;
 use core::future;
 use core::pin::Pin;
 use core::task::{Context, Poll, Waker};
+use slab::Slab;
 use std::collections::HashMap;
 use std::rc::Rc;
 use wasi::io::poll::Pollable;
+
+/// A key representing an entry into the poller
+#[repr(transparent)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+pub(crate) struct EventKey(pub(crate) usize);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct Registration {
@@ -83,7 +86,7 @@ pub struct Reactor {
 /// a lock of the whole.
 #[derive(Debug)]
 struct InnerReactor {
-    poller: Poller,
+    pollables: Slab<Pollable>,
     wakers: HashMap<Waitee, Waker>,
 }
 
@@ -105,7 +108,7 @@ impl Reactor {
     pub(crate) fn new() -> Self {
         Self {
             inner: Rc::new(RefCell::new(InnerReactor {
-                poller: Poller::new(),
+                pollables: Slab::new(),
                 wakers: HashMap::new(),
             })),
         }
@@ -124,8 +127,42 @@ impl Reactor {
     /// reason that we have to call all the wakers - even if by default they
     /// will do nothing.
     pub(crate) fn block_until(&self) {
-        let mut reactor = self.inner.borrow_mut();
-        for key in reactor.poller.block_until() {
+        let reactor = self.inner.borrow();
+
+        // We're about to wait for a number of pollables. When they wake we get
+        // the *indexes* back for the pollables whose events were available - so
+        // we need to be able to associate the index with the right waker.
+
+        // We start by iterating over the pollables, and keeping note of which
+        // pollable belongs to which waker index
+        let mut indexes = Vec::with_capacity(reactor.wakers.len());
+        let mut targets = Vec::with_capacity(reactor.wakers.len());
+        for waitee in reactor.wakers.keys() {
+            let pollable_index = waitee.pollable.0.key;
+            indexes.push(pollable_index);
+            targets.push(&reactor.pollables[pollable_index.0]);
+        }
+
+        debug_assert_ne!(
+            targets.len(),
+            0,
+            "Attempting to block on an empty list of pollables - without any pending work, no progress can be made and wasi::io::poll::poll will trap"
+        );
+
+        println!("polling for {indexes:?}");
+        // Now that we have that association, we're ready to poll our targets.
+        // This will block until an event has completed.
+        let ready_indexes = wasi::io::poll::poll(&targets);
+
+        // Once we have the indexes for which pollables are available, we need
+        // to convert it back to the right keys for the wakers. Earlier we
+        // established a positional index -> waker key relationship, so we can
+        // go right ahead and perform a lookup there.
+        let ready_keys = ready_indexes
+            .into_iter()
+            .map(|index| indexes[index as usize]);
+
+        for key in ready_keys {
             for (waitee, waker) in reactor.wakers.iter() {
                 if waitee.pollable.0.key == key {
                     println!("waking {key:?}");
@@ -138,7 +175,7 @@ impl Reactor {
     /// Turn a wasi [`Pollable`] into an [`AsyncPollable`]
     pub fn schedule(&self, pollable: Pollable) -> AsyncPollable {
         let mut reactor = self.inner.borrow_mut();
-        let key = reactor.poller.insert(pollable);
+        let key = EventKey(reactor.pollables.insert(pollable));
         println!("schedule pollable as {key:?}");
         AsyncPollable(Rc::new(Registration { key }))
     }
@@ -146,7 +183,7 @@ impl Reactor {
     fn deregister_event(&self, key: EventKey) {
         let mut reactor = self.inner.borrow_mut();
         println!("deregister {key:?}",);
-        reactor.poller.remove(key);
+        reactor.pollables.remove(key.0);
     }
 
     fn deregister_waitee(&self, waitee: &Waitee) {
@@ -158,8 +195,8 @@ impl Reactor {
     fn ready(&self, waitee: &Waitee, waker: &Waker) -> bool {
         let mut reactor = self.inner.borrow_mut();
         let ready = reactor
-            .poller
-            .get(&waitee.pollable.0.key)
+            .pollables
+            .get(waitee.pollable.0.key.0)
             .expect("only live EventKey can be checked for readiness")
             .ready();
         if !ready {
@@ -180,13 +217,73 @@ impl Reactor {
 #[cfg(test)]
 mod test {
     use super::*;
+    // Using WASMTIME_LOG, observe that this test doesn't even call poll() - the pollable is ready
+    // immediately.
     #[test]
-    fn reactor_subscribe_duration() {
+    fn subscribe_no_duration() {
         crate::runtime::block_on(async {
             let reactor = Reactor::current();
-            let pollable = wasi::clocks::monotonic_clock::subscribe_duration(1000);
+            let pollable = wasi::clocks::monotonic_clock::subscribe_duration(0);
             let sched = reactor.schedule(pollable);
             sched.wait_for().await;
+        })
+    }
+    // Using WASMTIME_LOG, observe that this test calls poll() until the timer is ready.
+    #[test]
+    fn subscribe_some_duration() {
+        crate::runtime::block_on(async {
+            let reactor = Reactor::current();
+            let pollable = wasi::clocks::monotonic_clock::subscribe_duration(10_000_000);
+            let sched = reactor.schedule(pollable);
+            sched.wait_for().await;
+        })
+    }
+
+    // Using WASMTIME_LOG, observe that this test results in a single poll() on the second
+    // subscription, rather than spinning in poll() with first subscription, which is instantly
+    // ready, but not what the waker requests.
+    #[test]
+    fn subscribe_multiple_durations() {
+        crate::runtime::block_on(async {
+            let reactor = Reactor::current();
+            let now = wasi::clocks::monotonic_clock::subscribe_duration(0);
+            let soon = wasi::clocks::monotonic_clock::subscribe_duration(10_000_000);
+            let now = reactor.schedule(now);
+            let soon = reactor.schedule(soon);
+            soon.wait_for().await;
+            drop(now)
+        })
+    }
+
+    // Using WASMTIME_LOG, observe that this test results in two calls to poll(), one with both
+    // pollables because both are awaiting, and one with just the later pollable.
+    #[test]
+    fn subscribe_multiple_durations_zipped() {
+        crate::runtime::block_on(async {
+            let reactor = Reactor::current();
+            let start = wasi::clocks::monotonic_clock::now();
+            let soon = wasi::clocks::monotonic_clock::subscribe_duration(10_000_000);
+            let later = wasi::clocks::monotonic_clock::subscribe_duration(40_000_000);
+            let soon = reactor.schedule(soon);
+            let later = reactor.schedule(later);
+
+            futures_lite::future::zip(
+                async move {
+                    soon.wait_for().await;
+                    println!(
+                        "*** subscribe_duration(soon) ready ({})",
+                        wasi::clocks::monotonic_clock::now() - start
+                    );
+                },
+                async move {
+                    later.wait_for().await;
+                    println!(
+                        "*** subscribe_duration(later) ready ({})",
+                        wasi::clocks::monotonic_clock::now() - start
+                    );
+                },
+            )
+            .await;
         })
     }
 }

@@ -11,7 +11,6 @@
 #![warn(missing_docs, unreachable_pub)]
 
 mod block_on;
-mod polling;
 mod reactor;
 
 pub use block_on::block_on;
