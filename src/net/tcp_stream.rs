@@ -26,6 +26,16 @@ impl TcpStream {
             .map_err(super::tcp_listener::to_io_err)?;
         Ok(format!("{addr:?}"))
     }
+
+    pub fn split(&self) -> (ReadHalf<'_>, WriteHalf<'_>) {
+        (ReadHalf(self), WriteHalf(self))
+    }
+}
+
+impl Drop for TcpStream {
+    fn drop(&mut self) {
+        let _ = self.socket.shutdown(wasi::sockets::tcp::ShutdownType::Both);
+    }
 }
 
 impl AsyncRead for TcpStream {
@@ -77,6 +87,42 @@ impl AsyncWrite for &TcpStream {
 
     async fn flush(&mut self) -> io::Result<()> {
         self.output.flush().map_err(to_io_err)
+    }
+}
+
+pub struct ReadHalf<'a>(&'a TcpStream);
+impl<'a> AsyncRead for ReadHalf<'a> {
+    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.read(buf).await
+    }
+}
+
+impl<'a> Drop for ReadHalf<'a> {
+    fn drop(&mut self) {
+        let _ = self
+            .0
+            .socket
+            .shutdown(wasi::sockets::tcp::ShutdownType::Receive);
+    }
+}
+
+pub struct WriteHalf<'a>(&'a TcpStream);
+impl<'a> AsyncWrite for WriteHalf<'a> {
+    async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.write(buf).await
+    }
+
+    async fn flush(&mut self) -> io::Result<()> {
+        self.0.flush().await
+    }
+}
+
+impl<'a> Drop for WriteHalf<'a> {
+    fn drop(&mut self) {
+        let _ = self
+            .0
+            .socket
+            .shutdown(wasi::sockets::tcp::ShutdownType::Send);
     }
 }
 
