@@ -9,11 +9,13 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasi::io::poll::Pollable;
 
-/// A key representing an entry into the poller
+/// A key for a Pollable, which is an index into the Slab<Pollable> in Reactor.
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub(crate) struct EventKey(pub(crate) usize);
 
+/// A Registration is a reference to the Reactor's owned Pollable. When the registration is
+/// dropped, the reactor will drop the Pollable resource.
 #[derive(Debug, PartialEq, Eq, Hash)]
 struct Registration {
     key: EventKey,
@@ -25,10 +27,13 @@ impl Drop for Registration {
     }
 }
 
+/// An AsyncPollable is a reference counted Registration. It can be cloned, and used to create
+/// as many WaitFor futures on a Pollable that the user needs.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AsyncPollable(Rc<Registration>);
 
 impl AsyncPollable {
+    /// Create a Future that waits for the Pollable's readiness.
     pub fn wait_for(&self) -> WaitFor {
         use std::sync::atomic::{AtomicUsize, Ordering};
         static COUNTER: AtomicUsize = AtomicUsize::new(0);
@@ -45,10 +50,13 @@ impl AsyncPollable {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct Waitee {
+    /// This needs to be a reference counted registration, because it may outlive the AsyncPollable
+    /// &self that it was created from.
     pollable: AsyncPollable,
     unique: usize,
 }
 
+/// A Future that waits for the Pollable's readiness.
 #[must_use = "futures do nothing unless polled or .awaited"]
 #[derive(Debug)]
 pub struct WaitFor {
@@ -138,6 +146,8 @@ impl Reactor {
         let mut targets = Vec::with_capacity(reactor.wakers.len());
         for waitee in reactor.wakers.keys() {
             let pollable_index = waitee.pollable.0.key;
+            // FIXME: instead of storing the indexes, we can actually just stick the waker in here,
+            // and make the quadratic lookup at the end of this function into a linear lookup.
             indexes.push(pollable_index);
             targets.push(&reactor.pollables[pollable_index.0]);
         }
@@ -160,6 +170,7 @@ impl Reactor {
             .into_iter()
             .map(|index| indexes[index as usize]);
 
+        // FIXME this doesn't have to be quadratic.
         for key in ready_keys {
             for (waitee, waker) in reactor.wakers.iter() {
                 if waitee.pollable.0.key == key {
