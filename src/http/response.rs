@@ -72,6 +72,14 @@ impl Response<IncomingBody> {
 }
 
 impl<B: Body> Response<B> {
+    pub fn new(headers: HeaderMap, body: B) -> Self {
+        Self {
+            headers,
+            status: StatusCode::Ok,
+            body,
+        }
+    }
+
     // Get the HTTP status code
     pub fn status_code(&self) -> StatusCode {
         self.status
