@@ -141,14 +141,12 @@ impl Reactor {
         // we need to be able to associate the index with the right waker.
 
         // We start by iterating over the pollables, and keeping note of which
-        // pollable belongs to which waker index
-        let mut indexes = Vec::with_capacity(reactor.wakers.len());
+        // pollable belongs to which waker
+        let mut indexed_wakers = Vec::with_capacity(reactor.wakers.len());
         let mut targets = Vec::with_capacity(reactor.wakers.len());
-        for waitee in reactor.wakers.keys() {
+        for (waitee, waker) in reactor.wakers.iter() {
             let pollable_index = waitee.pollable.0.key;
-            // FIXME: instead of storing the indexes, we can actually just stick the waker in here,
-            // and make the quadratic lookup at the end of this function into a linear lookup.
-            indexes.push(pollable_index);
+            indexed_wakers.push(waker);
             targets.push(&reactor.pollables[pollable_index.0]);
         }
 
@@ -166,17 +164,12 @@ impl Reactor {
         // to convert it back to the right keys for the wakers. Earlier we
         // established a positional index -> waker key relationship, so we can
         // go right ahead and perform a lookup there.
-        let ready_keys = ready_indexes
+        let ready_wakers = ready_indexes
             .into_iter()
-            .map(|index| indexes[index as usize]);
+            .map(|index| indexed_wakers[index as usize]);
 
-        // FIXME this doesn't have to be quadratic.
-        for key in ready_keys {
-            for (waitee, waker) in reactor.wakers.iter() {
-                if waitee.pollable.0.key == key {
-                    waker.wake_by_ref()
-                }
-            }
+        for waker in ready_wakers {
+            waker.wake_by_ref()
         }
     }
 
