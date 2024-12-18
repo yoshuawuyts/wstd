@@ -11,11 +11,10 @@
 #![warn(missing_docs, unreachable_pub)]
 
 mod block_on;
-mod polling;
 mod reactor;
 
 pub use block_on::block_on;
-pub use reactor::Reactor;
+pub use reactor::{AsyncPollable, Reactor, WaitFor};
 use std::cell::RefCell;
 
 // There are no threads in WASI 0.2, so this is just a safe way to thread a single reactor to all

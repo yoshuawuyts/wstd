@@ -1,5 +1,4 @@
-use super::Instant;
-use crate::task::Sleep;
+use super::{Instant, Wait};
 use std::future::IntoFuture;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use wasi::clocks::monotonic_clock;
@@ -135,7 +134,7 @@ impl SubAssign<Duration> for Duration {
 impl IntoFuture for Duration {
     type Output = Instant;
 
-    type IntoFuture = Sleep;
+    type IntoFuture = Wait;
 
     fn into_future(self) -> Self::IntoFuture {
         crate::task::sleep(self)
