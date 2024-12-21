@@ -1,6 +1,6 @@
 //! HTTP networking support
 //!
-pub use http::uri::Uri;
+pub use http::uri::{Authority, PathAndQuery, Scheme, Uri};
 
 #[doc(inline)]
 pub use body::{Body, IntoBody};
@@ -8,6 +8,7 @@ pub use client::Client;
 pub use error::{Error, Result};
 pub use fields::{HeaderMap, HeaderName, HeaderValue};
 pub use method::Method;
+pub use proxy::Proxy;
 pub use request::Request;
 pub use response::Response;
 pub use status_code::StatusCode;
@@ -21,3 +22,5 @@ mod method;
 mod request;
 mod response;
 mod status_code;
+#[macro_use]
+mod proxy;

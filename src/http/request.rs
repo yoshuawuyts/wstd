@@ -4,15 +4,16 @@ use super::{
     fields::header_map_to_wasi, method::to_wasi_method, Body, Error, HeaderMap, IntoBody, Method,
     Result,
 };
-use http::uri::Uri;
+use http::uri::{Authority, PathAndQuery, Scheme, Uri};
 use wasi::http::outgoing_handler::OutgoingRequest;
-use wasi::http::types::Scheme;
 
 /// An HTTP request
 #[derive(Debug)]
 pub struct Request<B: Body> {
     method: Method,
-    uri: Uri,
+    scheme: Option<Scheme>,
+    authority: Option<Authority>,
+    path_and_query: Option<PathAndQuery>,
     headers: HeaderMap,
     body: B,
 }
@@ -20,10 +21,31 @@ pub struct Request<B: Body> {
 impl Request<Empty> {
     /// Create a new HTTP request to send off to the client.
     pub fn new(method: Method, uri: Uri) -> Self {
+        let parts = uri.into_parts();
         Self {
             body: empty(),
             method,
-            uri,
+            scheme: parts.scheme,
+            authority: parts.authority,
+            path_and_query: parts.path_and_query,
+            headers: HeaderMap::new(),
+        }
+    }
+
+    /// Create a new HTTP request to send off to the client from parts
+    /// rather than a full `uri`.
+    pub fn incoming(
+        method: Method,
+        scheme: Option<Scheme>,
+        authority: Option<Authority>,
+        path_and_query: Option<PathAndQuery>,
+    ) -> Self {
+        Self {
+            body: empty(),
+            method,
+            scheme,
+            authority,
+            path_and_query,
             headers: HeaderMap::new(),
         }
     }
@@ -44,13 +66,17 @@ impl<B: Body> Request<B> {
     pub fn set_body<C: IntoBody>(self, body: C) -> Request<C::IntoBody> {
         let Self {
             method,
-            uri,
+            scheme,
+            authority,
+            path_and_query,
             headers,
             ..
         } = self;
         Request {
             method,
-            uri,
+            scheme,
+            authority,
+            path_and_query,
             headers,
             body: body.into_body(),
         }
@@ -66,23 +92,23 @@ impl<B: Body> Request<B> {
             .map_err(|()| Error::other(format!("method rejected by wasi-http: {method:?}",)))?;
 
         // Set the url scheme
-        let scheme = match self.uri.scheme().map(|s| s.as_str()) {
-            Some("http") => Scheme::Http,
-            Some("https") | None => Scheme::Https,
-            Some(other) => Scheme::Other(other.to_owned()),
+        let scheme = match self.scheme.as_ref().map(|s| s.as_str()) {
+            Some("http") => wasi::http::types::Scheme::Http,
+            Some("https") | None => wasi::http::types::Scheme::Https,
+            Some(other) => wasi::http::types::Scheme::Other(other.to_owned()),
         };
         wasi_req
             .set_scheme(Some(&scheme))
             .map_err(|()| Error::other(format!("scheme rejected by wasi-http: {scheme:?}")))?;
 
         // Set authority
-        let authority = self.uri.authority().map(|a| a.as_str());
+        let authority = self.authority.as_ref().map(|a| a.as_str());
         wasi_req
             .set_authority(authority)
             .map_err(|()| Error::other(format!("authority rejected by wasi-http {authority:?}")))?;
 
         // Set the url path + query string
-        if let Some(p_and_q) = self.uri.path_and_query() {
+        if let Some(p_and_q) = self.path_and_query {
             wasi_req
                 .set_path_with_query(Some(&p_and_q.to_string()))
                 .map_err(|()| {
