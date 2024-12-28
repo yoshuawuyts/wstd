@@ -3,15 +3,17 @@ use wasi::sockets::tcp::{ErrorCode, IpAddressFamily, IpSocketAddress, TcpSocket}
 
 use crate::io;
 use crate::iter::AsyncIterator;
-use crate::runtime::Reactor;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 
 use super::TcpStream;
+use crate::runtime::AsyncPollable;
 
 /// A TCP socket server, listening for connections.
 #[derive(Debug)]
 pub struct TcpListener {
+    // Field order matters: must drop this child before parent below
+    pollable: AsyncPollable,
     socket: TcpSocket,
 }
 
@@ -40,18 +42,17 @@ impl TcpListener {
             }
             SocketAddr::V6(_) => todo!("IPv6 not yet supported in `wstd::net::TcpListener`"),
         };
-        let reactor = Reactor::current();
-
         socket
             .start_bind(&network, local_address)
             .map_err(to_io_err)?;
-        reactor.wait_for(socket.subscribe()).await;
+        let pollable = AsyncPollable::new(socket.subscribe());
+        pollable.wait_for().await;
         socket.finish_bind().map_err(to_io_err)?;
 
         socket.start_listen().map_err(to_io_err)?;
-        reactor.wait_for(socket.subscribe()).await;
+        pollable.wait_for().await;
         socket.finish_listen().map_err(to_io_err)?;
-        Ok(Self { socket })
+        Ok(Self { pollable, socket })
     }
 
     /// Returns the local socket address of this listener.
@@ -77,18 +78,12 @@ impl<'a> AsyncIterator for Incoming<'a> {
     type Item = io::Result<TcpStream>;
 
     async fn next(&mut self) -> Option<Self::Item> {
-        Reactor::current()
-            .wait_for(self.listener.socket.subscribe())
-            .await;
+        self.listener.pollable.wait_for().await;
         let (socket, input, output) = match self.listener.socket.accept().map_err(to_io_err) {
             Ok(accepted) => accepted,
             Err(err) => return Some(Err(err)),
         };
-        Some(Ok(TcpStream {
-            socket,
-            input,
-            output,
-        }))
+        Some(Ok(TcpStream::new(input, output, socket)))
     }
 }
 
