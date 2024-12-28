@@ -4,6 +4,7 @@ use wasi::cli::terminal_input::TerminalInput;
 use wasi::cli::terminal_output::TerminalOutput;
 
 /// Use the program's stdin as an `AsyncInputStream`.
+#[derive(Debug)]
 pub struct Stdin {
     stream: AsyncInputStream,
     terminput: LazyCell<Option<TerminalInput>>,
@@ -38,6 +39,7 @@ impl Stdin {
 }
 
 /// Use the program's stdout as an `AsyncOutputStream`.
+#[derive(Debug)]
 pub struct Stdout {
     stream: AsyncOutputStream,
     termoutput: LazyCell<Option<TerminalOutput>>,
@@ -72,6 +74,7 @@ impl std::ops::DerefMut for Stdout {
 }
 
 /// Use the program's stdout as an `AsyncOutputStream`.
+#[derive(Debug)]
 pub struct Stderr {
     stream: AsyncOutputStream,
     termoutput: LazyCell<Option<TerminalOutput>>,

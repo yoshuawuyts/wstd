@@ -1,12 +1,7 @@
 use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
-use wasi::io::streams::{InputStream, StreamError};
 
 use super::{fields::header_map_from_wasi, Body, Error, HeaderMap, Result, StatusCode};
-use crate::io::AsyncRead;
-use crate::runtime::Reactor;
-
-/// Stream 2kb chunks at a time
-const CHUNK_SIZE: u64 = 2048;
+use crate::io::{AsyncInputStream, AsyncRead};
 
 /// An HTTP response
 #[derive(Debug)]
@@ -57,9 +52,7 @@ impl Response<IncomingBody> {
 
         let body = IncomingBody {
             kind,
-            buf_offset: 0,
-            buf: None,
-            body_stream,
+            body_stream: AsyncInputStream::new(body_stream),
             _incoming_body: incoming_body,
         };
 
@@ -96,54 +89,15 @@ impl<B: Body> Response<B> {
 #[derive(Debug)]
 pub struct IncomingBody {
     kind: BodyKind,
-    buf: Option<Vec<u8>>,
-    // How many bytes have we already read from the buf?
-    buf_offset: usize,
-
     // IMPORTANT: the order of these fields here matters. `body_stream` must
     // be dropped before `_incoming_body`.
-    body_stream: InputStream,
+    body_stream: AsyncInputStream,
     _incoming_body: WasiIncomingBody,
 }
 
 impl AsyncRead for IncomingBody {
     async fn read(&mut self, out_buf: &mut [u8]) -> crate::io::Result<usize> {
-        let buf = match &mut self.buf {
-            Some(ref mut buf) => buf,
-            None => {
-                // Wait for an event to be ready
-                let pollable = self.body_stream.subscribe();
-                Reactor::current().wait_for(pollable).await;
-
-                // Read the bytes from the body stream
-                let buf = match self.body_stream.read(CHUNK_SIZE) {
-                    Ok(buf) => buf,
-                    Err(StreamError::Closed) => return Ok(0),
-                    Err(StreamError::LastOperationFailed(err)) => {
-                        return Err(std::io::Error::other(format!(
-                            "last operation failed: {}",
-                            err.to_debug_string()
-                        )))
-                    }
-                };
-                self.buf.insert(buf)
-            }
-        };
-
-        // copy bytes
-        let len = (buf.len() - self.buf_offset).min(out_buf.len());
-        let max = self.buf_offset + len;
-        let slice = &buf[self.buf_offset..max];
-        out_buf[0..len].copy_from_slice(slice);
-        self.buf_offset += len;
-
-        // reset the local slice if necessary
-        if self.buf_offset == buf.len() {
-            self.buf = None;
-            self.buf_offset = 0;
-        }
-
-        Ok(len)
+        self.body_stream.read(out_buf).await
     }
 }
 

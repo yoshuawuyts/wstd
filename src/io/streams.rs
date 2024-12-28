@@ -3,6 +3,7 @@ use std::cell::RefCell;
 use std::io::Result;
 use wasi::io::streams::{InputStream, OutputStream, StreamError};
 
+#[derive(Debug)]
 pub struct AsyncInputStream {
     // Lazily initialized pollable, used for lifetime of stream to check readiness.
     // Field ordering matters: this child must be dropped before stream
@@ -51,6 +52,7 @@ impl AsyncRead for AsyncInputStream {
     }
 }
 
+#[derive(Debug)]
 pub struct AsyncOutputStream {
     // Lazily initialized pollable, used for lifetime of stream to check readiness.
     // Field ordering matters: this child must be dropped before stream
