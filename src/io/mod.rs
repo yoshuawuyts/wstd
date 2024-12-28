@@ -5,6 +5,7 @@ mod cursor;
 mod empty;
 mod read;
 mod seek;
+mod stdio;
 mod streams;
 mod write;
 
@@ -14,6 +15,7 @@ pub use cursor::*;
 pub use empty::*;
 pub use read::*;
 pub use seek::*;
+pub use stdio::*;
 pub use streams::*;
 pub use write::*;
 
