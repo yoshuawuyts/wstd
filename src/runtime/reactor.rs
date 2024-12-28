@@ -33,6 +33,11 @@ impl Drop for Registration {
 pub struct AsyncPollable(Rc<Registration>);
 
 impl AsyncPollable {
+    /// Create an `AsyncPollable` from a Wasi `Pollable`. Schedules the `Pollable` with the current
+    /// `Reactor`.
+    pub fn new(pollable: Pollable) -> Self {
+        Reactor::current().schedule(pollable)
+    }
     /// Create a Future that waits for the Pollable's readiness.
     pub fn wait_for(&self) -> WaitFor {
         use std::sync::atomic::{AtomicUsize, Ordering};
