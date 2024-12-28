@@ -207,12 +207,6 @@ impl Reactor {
         }
         ready
     }
-
-    /// Wait for the pollable to resolve.
-    pub async fn wait_for(&self, pollable: Pollable) {
-        let p = self.schedule(pollable);
-        p.wait_for().await
-    }
 }
 
 #[cfg(test)]

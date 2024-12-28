@@ -1,6 +1,5 @@
 use super::{response::IncomingBody, Body, Error, Request, Response, Result};
-use crate::io::{self, AsyncOutputStream};
-use crate::runtime::Reactor;
+use crate::io::{self, AsyncOutputStream, AsyncPollable};
 use crate::time::Duration;
 use wasi::http::types::{OutgoingBody, RequestOptions as WasiRequestOptions};
 
@@ -34,7 +33,8 @@ impl Client {
         OutgoingBody::finish(wasi_body, trailers).unwrap();
 
         // 4. Receive the response
-        Reactor::current().wait_for(res.subscribe()).await;
+        AsyncPollable::new(res.subscribe()).wait_for().await;
+
         // NOTE: the first `unwrap` is to ensure readiness, the second `unwrap`
         // is to trap if we try and get the response more than once. The final
         // `?` is to raise the actual error if there is one.
