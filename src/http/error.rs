@@ -24,6 +24,7 @@ impl fmt::Debug for Error {
             ErrorVariant::HeaderName(e) => write!(f, "header name error: {e:?}"),
             ErrorVariant::HeaderValue(e) => write!(f, "header value error: {e:?}"),
             ErrorVariant::Method(e) => write!(f, "method error: {e:?}"),
+            ErrorVariant::BodyIo(e) => write!(f, "body error: {e:?}"),
             ErrorVariant::Other(e) => write!(f, "{e}"),
         }
     }
@@ -37,6 +38,7 @@ impl fmt::Display for Error {
             ErrorVariant::HeaderName(e) => write!(f, "header name error: {e}"),
             ErrorVariant::HeaderValue(e) => write!(f, "header value error: {e}"),
             ErrorVariant::Method(e) => write!(f, "method error: {e}"),
+            ErrorVariant::BodyIo(e) => write!(f, "body error: {e}"),
             ErrorVariant::Other(e) => write!(f, "{e}"),
         }
     }
@@ -100,6 +102,12 @@ impl From<InvalidMethod> for Error {
     }
 }
 
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Error {
+        ErrorVariant::BodyIo(e).into()
+    }
+}
+
 #[derive(Debug)]
 pub enum ErrorVariant {
     WasiHttp(WasiHttpErrorCode),
@@ -107,5 +115,6 @@ pub enum ErrorVariant {
     HeaderName(InvalidHeaderName),
     HeaderValue(InvalidHeaderValue),
     Method(InvalidMethod),
+    BodyIo(std::io::Error),
     Other(String),
 }

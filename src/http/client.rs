@@ -1,5 +1,5 @@
 use super::{response::IncomingBody, Body, Error, Request, Response, Result};
-use crate::io::{self, AsyncWrite};
+use crate::io::{self, AsyncOutputStream};
 use crate::runtime::Reactor;
 use crate::time::Duration;
 use wasi::http::types::{OutgoingBody, RequestOptions as WasiRequestOptions};
@@ -27,9 +27,7 @@ impl Client {
         let res = wasi::http::outgoing_handler::handle(wasi_req, self.wasi_options()?).unwrap();
 
         // 2. Start sending the request body
-        io::copy(body, OutputStream::new(body_stream))
-            .await
-            .expect("io::copy broke oh no");
+        io::copy(body, AsyncOutputStream::new(body_stream)).await?;
 
         // 3. Finish sending the request body
         let trailers = None;
@@ -71,33 +69,6 @@ impl Client {
 
     fn wasi_options(&self) -> Result<Option<WasiRequestOptions>> {
         self.options.as_ref().map(|o| o.to_wasi()).transpose()
-    }
-}
-
-struct OutputStream {
-    stream: wasi::http::types::OutputStream,
-}
-
-impl OutputStream {
-    fn new(stream: wasi::http::types::OutputStream) -> Self {
-        Self { stream }
-    }
-}
-
-impl AsyncWrite for OutputStream {
-    async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let max = self.stream.check_write().unwrap() as usize;
-        let max = max.min(buf.len());
-        let buf = &buf[0..max];
-        self.stream.write(buf).unwrap();
-        Reactor::current().wait_for(self.stream.subscribe()).await;
-        Ok(max)
-    }
-
-    async fn flush(&mut self) -> io::Result<()> {
-        self.stream.flush().unwrap();
-        Reactor::current().wait_for(self.stream.subscribe()).await;
-        Ok(())
     }
 }
 
