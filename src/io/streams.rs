@@ -40,10 +40,10 @@ impl AsyncRead for AsyncInputStream {
         // Ideally, the ABI would be able to read directly into buf. However, with the default
         // generated bindings, it returns a newly allocated vec, which we need to copy into buf.
         let read = match self.stream.read(buf.len() as u64) {
-            // 0 bytets from WASI's `read` just means we got zero bytes.
-            Ok(r) if r.is_empty() => {
-                return Err(std::io::Error::from(std::io::ErrorKind::Interrupted))
-            }
+            // We don't need to special-case 0 here: a value of 0 bytes from
+            // WASI's `read` doesn't mean end-of-stream as it does in Rust,
+            // however since we called `self.ready()`, we'll always get at
+            // least one byte.
             Ok(r) => r,
             // 0 bytes from Rust's `read` means end-of-stream.
             Err(StreamError::Closed) => return Ok(0),
