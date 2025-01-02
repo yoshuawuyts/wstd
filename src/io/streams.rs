@@ -40,7 +40,12 @@ impl AsyncRead for AsyncInputStream {
         // Ideally, the ABI would be able to read directly into buf. However, with the default
         // generated bindings, it returns a newly allocated vec, which we need to copy into buf.
         let read = match self.stream.read(buf.len() as u64) {
+            // We don't need to special-case 0 here: a value of 0 bytes from
+            // WASI's `read` doesn't mean end-of-stream as it does in Rust,
+            // however since we called `self.ready()`, we'll always get at
+            // least one byte.
             Ok(r) => r,
+            // 0 bytes from Rust's `read` means end-of-stream.
             Err(StreamError::Closed) => return Ok(0),
             Err(StreamError::LastOperationFailed(err)) => {
                 return Err(std::io::Error::other(err.to_debug_string()))
@@ -97,13 +102,17 @@ impl AsyncWrite for AsyncOutputStream {
                     let writable = some.try_into().unwrap_or(usize::MAX).min(buf.len());
                     match self.stream.write(&buf[0..writable]) {
                         Ok(()) => return Ok(writable),
-                        Err(StreamError::Closed) => return Ok(0),
+                        Err(StreamError::Closed) => {
+                            return Err(std::io::Error::from(std::io::ErrorKind::ConnectionReset))
+                        }
                         Err(StreamError::LastOperationFailed(err)) => {
                             return Err(std::io::Error::other(err.to_debug_string()))
                         }
                     }
                 }
-                Err(StreamError::Closed) => return Ok(0),
+                Err(StreamError::Closed) => {
+                    return Err(std::io::Error::from(std::io::ErrorKind::ConnectionReset))
+                }
                 Err(StreamError::LastOperationFailed(err)) => {
                     return Err(std::io::Error::other(err.to_debug_string()))
                 }
@@ -116,7 +125,9 @@ impl AsyncWrite for AsyncOutputStream {
                 self.ready().await;
                 Ok(())
             }
-            Err(StreamError::Closed) => Ok(()),
+            Err(StreamError::Closed) => {
+                Err(std::io::Error::from(std::io::ErrorKind::ConnectionReset))
+            }
             Err(StreamError::LastOperationFailed(err)) => {
                 Err(std::io::Error::other(err.to_debug_string()))
             }
