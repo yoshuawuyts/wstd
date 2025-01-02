@@ -1,13 +1,12 @@
 use std::error::Error;
-use wstd::http::{Body, Client, HeaderValue, Method, Request};
-use wstd::io::AsyncRead;
+use wstd::http::{Body, Client, HeaderValue, Request};
+use wstd::io::{empty, AsyncRead};
 
 #[wstd::test]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let mut request = Request::new(Method::GET, "https://postman-echo.com/get".parse()?);
-    request
-        .headers_mut()
-        .insert("my-header", HeaderValue::from_str("my-value")?);
+    let request = Request::get("https://postman-echo.com/get")
+        .header("my-header", HeaderValue::from_str("my-value")?)
+        .body(empty())?;
 
     let mut response = Client::new().send(request).await?;
 
@@ -17,7 +16,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .ok_or_else(|| "response expected to have Content-Type header")?;
     assert_eq!(content_type, "application/json; charset=utf-8");
 
-    let body = response.body();
+    let body = response.body_mut();
     let body_len = body
         .len()
         .ok_or_else(|| "GET postman-echo.com/get is supposed to provide a content-length")?;
