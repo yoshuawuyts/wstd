@@ -1,4 +1,4 @@
-use super::{body::IncomingBody, Error, Request, Response, Result};
+use super::{body::IncomingBody, Body, Error, Request, Response, Result};
 use crate::http::request::into_outgoing;
 use crate::http::response::try_from_incoming_response;
 use crate::io::{self, AsyncOutputStream, AsyncPollable};
