@@ -10,7 +10,7 @@ pub trait Body: AsyncRead {
     /// Returns the exact remaining length of the iterator, if known.
     fn len(&self) -> Option<usize>;
 
-    /// Returns `true`` if the body is known to be empty.
+    /// Returns `true` if the body is known to be empty.
     fn is_empty(&self) -> bool {
         matches!(self.len(), Some(0))
     }

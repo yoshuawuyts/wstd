@@ -1,15 +1,10 @@
 use wasi::http::types::{IncomingBody as WasiIncomingBody, IncomingResponse};
 
-use super::{fields::header_map_from_wasi, Body, Error, HeaderMap, Result, StatusCode};
+use super::{fields::header_map_from_wasi, Body, Error, HeaderMap, Result};
 use crate::io::{AsyncInputStream, AsyncRead};
+use http::StatusCode;
 
-/// An HTTP response
-#[derive(Debug)]
-pub struct Response<B: Body> {
-    headers: HeaderMap,
-    status: StatusCode,
-    body: B,
-}
+pub use http::Response;
 
 #[derive(Debug)]
 enum BodyKind {
@@ -35,54 +30,39 @@ impl BodyKind {
     }
 }
 
-impl Response<IncomingBody> {
-    pub(crate) fn try_from_incoming_response(incoming: IncomingResponse) -> Result<Self> {
-        let headers: HeaderMap = header_map_from_wasi(incoming.headers())?;
-        let status = incoming.status().into();
+pub(crate) fn try_from_incoming_response(
+    incoming: IncomingResponse,
+) -> Result<Response<IncomingBody>> {
+    let headers: HeaderMap = header_map_from_wasi(incoming.headers())?;
+    // TODO: Does WASI guarantee that the incoming status is valid?
+    let status =
+        StatusCode::from_u16(incoming.status()).map_err(|err| Error::other(err.to_string()))?;
 
-        let kind = BodyKind::from_headers(&headers)?;
-        // `body_stream` is a child of `incoming_body` which means we cannot
-        // drop the parent before we drop the child
-        let incoming_body = incoming
-            .consume()
-            .expect("cannot call `consume` twice on incoming response");
-        let body_stream = incoming_body
-            .stream()
-            .expect("cannot call `stream` twice on an incoming body");
+    let kind = BodyKind::from_headers(&headers)?;
+    // `body_stream` is a child of `incoming_body` which means we cannot
+    // drop the parent before we drop the child
+    let incoming_body = incoming
+        .consume()
+        .expect("cannot call `consume` twice on incoming response");
+    let body_stream = incoming_body
+        .stream()
+        .expect("cannot call `stream` twice on an incoming body");
 
-        let body = IncomingBody {
-            kind,
-            body_stream: AsyncInputStream::new(body_stream),
-            _incoming_body: incoming_body,
-        };
+    let body = IncomingBody {
+        kind,
+        body_stream: AsyncInputStream::new(body_stream),
+        _incoming_body: incoming_body,
+    };
 
-        Ok(Self {
-            headers,
-            body,
-            status,
-        })
-    }
-}
+    let mut builder = Response::builder().status(status);
 
-impl<B: Body> Response<B> {
-    // Get the HTTP status code
-    pub fn status_code(&self) -> StatusCode {
-        self.status
+    if let Some(headers_mut) = builder.headers_mut() {
+        *headers_mut = headers;
     }
 
-    /// Get the HTTP headers from the impl
-    pub fn headers(&self) -> &HeaderMap {
-        &self.headers
-    }
-
-    /// Mutably get the HTTP headers from the impl
-    pub fn headers_mut(&mut self) -> &mut HeaderMap {
-        &mut self.headers
-    }
-
-    pub fn body(&mut self) -> &mut B {
-        &mut self.body
-    }
+    builder
+        .body(body)
+        .map_err(|err| Error::other(err.to_string()))
 }
 
 /// An incoming HTTP body

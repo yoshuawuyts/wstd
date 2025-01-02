@@ -1,5 +1,6 @@
 //! HTTP networking support
 //!
+pub use http::status::StatusCode;
 pub use http::uri::Uri;
 
 #[doc(inline)]
@@ -10,7 +11,6 @@ pub use fields::{HeaderMap, HeaderName, HeaderValue};
 pub use method::Method;
 pub use request::Request;
 pub use response::Response;
-pub use status_code::StatusCode;
 
 pub mod body;
 
@@ -20,4 +20,3 @@ mod fields;
 mod method;
 mod request;
 mod response;
-mod status_code;

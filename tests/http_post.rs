@@ -1,18 +1,17 @@
 use std::error::Error;
-use wstd::http::{Client, HeaderValue, Method, Request};
+use wstd::http::{Client, HeaderValue, IntoBody, Request};
 use wstd::io::AsyncRead;
 
 #[wstd::test]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let mut request = Request::new(Method::POST, "https://postman-echo.com/post".parse()?);
-    request.headers_mut().insert(
-        "content-type",
-        HeaderValue::from_str("application/json; charset=utf-8")?,
-    );
+    let request = Request::post("https://postman-echo.com/post")
+        .header(
+            "content-type",
+            HeaderValue::from_str("application/json; charset=utf-8")?,
+        )
+        .body("{\"test\": \"data\"}".into_body())?;
 
-    let mut response = Client::new()
-        .send(request.set_body("{\"test\": \"data\"}"))
-        .await?;
+    let mut response = Client::new().send(request).await?;
 
     let content_type = response
         .headers()
@@ -21,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     assert_eq!(content_type, "application/json; charset=utf-8");
 
     let mut body_buf = Vec::new();
-    response.body().read_to_end(&mut body_buf).await?;
+    response.body_mut().read_to_end(&mut body_buf).await?;
 
     let val: serde_json::Value = serde_json::from_slice(&body_buf)?;
     let body_url = val
