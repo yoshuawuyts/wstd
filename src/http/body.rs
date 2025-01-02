@@ -140,6 +140,12 @@ impl AsyncRead for IncomingBody {
     }
 }
 
+impl AsyncRead for &mut IncomingBody {
+    async fn read(&mut self, out_buf: &mut [u8]) -> crate::io::Result<usize> {
+        (*self).read(out_buf).await
+    }
+}
+
 impl Body for IncomingBody {
     fn len(&self) -> Option<usize> {
         match self.kind {

@@ -49,6 +49,7 @@
 //! is specific to that are exposed from here.
 
 pub mod future;
+#[macro_use]
 pub mod http;
 pub mod io;
 pub mod iter;
@@ -59,7 +60,12 @@ pub mod task;
 pub mod time;
 
 pub use wstd_macro::attr_macro_main as main;
+pub use wstd_macro::attr_macro_proxy as proxy;
 pub use wstd_macro::attr_macro_test as test;
+
+// Re-export the wasi crate for use by the `proxy` macro.
+#[doc(hidden)]
+pub use wasi as wasi;
 
 pub mod prelude {
     pub use crate::future::FutureExt as _;

@@ -83,3 +83,74 @@ pub fn attr_macro_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     .into()
 }
+
+/// Enables a proxy main function.
+///
+/// # Examples
+///
+/// ```ignore
+/// #[wstd::proxy]
+/// async fn main(request: Request<IncomingBody>, responder: Responder) -> Finished {
+///     responder
+///         .respond(Response::new(b"Hello!\n"), None)
+///         .await
+/// }
+/// ```
+#[proc_macro_attribute]
+pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(item as syn::ItemFn);
+
+    if input.sig.asyncness.is_none() {
+        return quote_spanned! { input.sig.fn_token.span()=>
+            compile_error!("fn must be `async fn`");
+        }
+        .into();
+    }
+
+    let ret = &input.sig.output;
+    let inputs = &input.sig.inputs;
+    let name = &input.sig.ident;
+    let body = &input.block;
+    let attrs = &input.attrs;
+    let vis = &input.vis;
+
+    if name != "main" {
+        return TokenStream::from(quote_spanned! { name.span() =>
+            compile_error!("only the main function can be tagged with #[wstd::main]"),
+        });
+    }
+
+    let result = quote! {
+        struct TheProxy;
+
+        impl ::wstd::wasi::exports::http::incoming_handler::Guest for TheProxy {
+            fn handle(
+                request: ::wstd::wasi::http::types::IncomingRequest,
+                response_out: ::wstd::wasi::http::types::ResponseOutparam
+            ) {
+                #(#attrs)*
+                #vis async fn __run(#inputs) #ret {
+                    #body
+                }
+
+                let responder = ::wstd::http::proxy::Responder::new(response_out);
+                let finished: ::wstd::http::proxy::Finished =
+                    match ::wstd::http::try_from_incoming_request(request)
+                {
+                    Ok(request) => ::wstd::runtime::block_on(async { __run(request, responder).await }),
+                    Err(err) => responder.fail(err),
+                };
+                ::core::mem::forget(finished);
+            }
+        }
+
+        ::wstd::wasi::http::proxy::export!(TheProxy with_types_in wasi);
+
+        // In case the user needs it, provide a `main` function so that the
+        // code compiles.
+        #[allow(dead_code)]
+        fn main() { unreachable!("Proxy components should be run with `handle` rather than `main`") }
+    };
+
+    result.into()
+}
