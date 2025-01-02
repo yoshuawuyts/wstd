@@ -3,14 +3,16 @@ use wasi::http::types::IncomingResponse;
 use super::{
     body::{BodyKind, IncomingBody},
     fields::header_map_from_wasi,
-    Error, HeaderMap, Result,
+    Error, HeaderMap,
 };
 use crate::io::AsyncInputStream;
 use http::StatusCode;
 
 pub use http::Response;
 
-pub(crate) fn try_from_incoming(incoming: IncomingResponse) -> Result<Response<IncomingBody>> {
+pub(crate) fn try_from_incoming(
+    incoming: IncomingResponse,
+) -> Result<Response<IncomingBody>, Error> {
     let headers: HeaderMap = header_map_from_wasi(incoming.headers())?;
     // TODO: Does WASI guarantee that the incoming status is valid?
     let status =
