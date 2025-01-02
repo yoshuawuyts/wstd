@@ -98,7 +98,7 @@ pub fn attr_macro_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let input = syn::parse_macro_input!(item as syn::ItemFn);
+    let input = parse_macro_input!(item as ItemFn);
 
     if input.sig.asyncness.is_none() {
         return quote_spanned! { input.sig.fn_token.span()=>
@@ -107,7 +107,7 @@ pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
         .into();
     }
 
-    let ret = &input.sig.output;
+    let output = &input.sig.output;
     let inputs = &input.sig.inputs;
     let name = &input.sig.ident;
     let body = &input.block;
@@ -115,12 +115,13 @@ pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let vis = &input.vis;
 
     if name != "main" {
-        return TokenStream::from(quote_spanned! { name.span() =>
-            compile_error!("only the main function can be tagged with #[wstd::main]"),
-        });
+        return quote_spanned! { input.sig.ident.span()=>
+            compile_error!("only `async fn main` can be used for #[wstd::proxy]");
+        }
+        .into();
     }
 
-    let result = quote! {
+    quote! {
         struct TheProxy;
 
         impl ::wstd::wasi::exports::http::incoming_handler::Guest for TheProxy {
@@ -129,7 +130,7 @@ pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 response_out: ::wstd::wasi::http::types::ResponseOutparam
             ) {
                 #(#attrs)*
-                #vis async fn __run(#inputs) #ret {
+                #vis async fn __run(#inputs) #output {
                     #body
                 }
 
@@ -150,7 +151,6 @@ pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
         // code compiles.
         #[allow(dead_code)]
         fn main() { unreachable!("Proxy components should be run with `handle` rather than `main`") }
-    };
-
-    result.into()
+    }
+    .into()
 }

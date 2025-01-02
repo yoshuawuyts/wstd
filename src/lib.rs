@@ -65,7 +65,7 @@ pub use wstd_macro::attr_macro_test as test;
 
 // Re-export the wasi crate for use by the `proxy` macro.
 #[doc(hidden)]
-pub use wasi as wasi;
+pub use wasi;
 
 pub mod prelude {
     pub use crate::future::FutureExt as _;
