@@ -1,6 +1,6 @@
 use wasi::http::types::Method as WasiMethod;
 
-use super::Result;
+use http::method::InvalidMethod;
 pub use http::Method;
 
 pub(crate) fn to_wasi_method(value: Method) -> WasiMethod {
@@ -18,9 +18,7 @@ pub(crate) fn to_wasi_method(value: Method) -> WasiMethod {
     }
 }
 
-// This will become useful once we support IncomingRequest
-#[allow(dead_code)]
-pub(crate) fn from_wasi_method(value: WasiMethod) -> Result<Method> {
+pub(crate) fn from_wasi_method(value: WasiMethod) -> Result<Method, InvalidMethod> {
     Ok(match value {
         WasiMethod::Get => Method::GET,
         WasiMethod::Head => Method::HEAD,
