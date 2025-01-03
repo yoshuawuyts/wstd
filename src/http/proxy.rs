@@ -86,10 +86,12 @@ impl Responder {
         let body = body.as_ref();
 
         // Automatically add a Content-Length header.
+        // TODO: Remove the `to_owned()` calls after bytecodealliance/wit-bindgen#1102.
+        let mut buffer = itoa::Buffer::new();
         wasi_headers
             .append(
                 &"content-length".to_owned(),
-                &body.len().to_string().into_bytes(),
+                &buffer.format(body.len()).to_owned().into_bytes(),
             )
             .unwrap();
 
@@ -114,13 +116,13 @@ impl Responder {
         outgoing_body.finish(result, trailers)
     }
 
-    /// This is used by the `main` macro.
+    /// This is used by the `proxy` macro.
     #[doc(hidden)]
     pub fn new(outparam: ResponseOutparam) -> Self {
         Self { outparam }
     }
 
-    /// This is used by the `main` macro.
+    /// This is used by the `proxy` macro.
     #[doc(hidden)]
     pub fn fail(self, err: WasiHttpErrorCode) -> Finished {
         ResponseOutparam::set(self.outparam, Err(err));

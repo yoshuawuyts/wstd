@@ -41,6 +41,7 @@ pub(crate) fn into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, 
 
     // Set the url path + query string
     if let Some(p_and_q) = parts.uri.path_and_query() {
+        // TODO: Change the `to_string()` to `as_str()` after bytecodealliance/wit-bindgen#1102.
         wasi_req
             .set_path_with_query(Some(&p_and_q.to_string()))
             .map_err(|()| {
@@ -52,7 +53,7 @@ pub(crate) fn into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, 
     Ok((wasi_req, body))
 }
 
-/// This is used by the `main` macro.
+/// This is used by the `proxy` macro.
 #[doc(hidden)]
 pub fn try_from_incoming_request(
     incoming: IncomingRequest,

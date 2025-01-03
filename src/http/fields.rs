@@ -24,6 +24,7 @@ pub(crate) fn header_map_to_wasi(header_map: &HeaderMap) -> Fields {
     let wasi_fields = Fields::new();
     for (key, value) in header_map {
         // Unwrap because `HeaderMap` has already validated the headers.
+        // TODO: Remove the `to_owned()` calls after bytecodealliance/wit-bindgen#1102.
         wasi_fields
             .append(&key.as_str().to_owned(), &value.as_bytes().to_owned())
             .unwrap_or_else(|err| panic!("header named {key}: {err:?}"));
