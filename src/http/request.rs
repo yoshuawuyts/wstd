@@ -53,7 +53,7 @@ pub(crate) fn into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, 
     Ok((wasi_req, body))
 }
 
-/// This is used by the `proxy` macro.
+/// This is used by the `http_server` macro.
 #[doc(hidden)]
 pub fn try_from_incoming_request(
     incoming: IncomingRequest,

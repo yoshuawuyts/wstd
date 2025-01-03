@@ -1,15 +1,36 @@
+//! HTTP servers
+//!
+//! The WASI HTTP server API uses the [typed main] idiom, with a `main` function
+//! that takes a [`Request`] and a [`Responder`], and responds with a [`Response`],
+//! using the [`http_server`] macro:
+//!
+//! ```no_run
+//! #[wstd::http_server]
+//! async fn main(request: Request<IncomingBody>, responder: Responder) -> Finished {
+//!     responder
+//!         .respond(Response::new(b"Hello!\n"), None)
+//!         .await
+//! }
+//! ```
+//!
+//! [typed main]: https://sunfishcode.github.io/typed-main-wasi-presentation/chapter_1.html
+//! [`Request`]: crate::http::Request
+//! [`Responder`]: crate::http::server::Responder
+//! [`Response`]: crate::http::Response
+//! [`http_server`]: crate::http_server
+
 use super::{error::WasiHttpErrorCode, fields::header_map_to_wasi, HeaderMap, Response};
 use crate::io::{AsyncOutputStream, AsyncWrite};
 use wasi::exports::http::incoming_handler::ResponseOutparam;
 use wasi::http::types::OutgoingResponse;
 
-/// This is passed into the [`proxy`] `main` function and holds the state
+/// This is passed into the [`http_server`] `main` function and holds the state
 /// needed for a handler to produce a response, or fail. There are two ways to
 /// respond, with [`Responder::start_response`] to stream the body in, or
 /// [`Responder::respond`] to give the body as a single string. See those
 /// functions for examples.
 ///
-/// [`proxy`]: crate::proxy
+/// [`http_server`]: crate::http_server
 #[must_use]
 pub struct Responder {
     outparam: ResponseOutparam,
@@ -23,7 +44,7 @@ impl Responder {
     ///
     /// ```
     /// # use wstd::http::{body::IncomingBody, Response, Request};
-    /// # use wstd::http::proxy::{BodyForthcoming, Finished, Responder};
+    /// # use wstd::http::server::{BodyForthcoming, Finished, Responder};
     /// # use crate::wstd::io::AsyncWrite;
     /// # async fn example(responder: Responder) -> Finished {
     ///     let mut body = responder.start_response(Response::new(BodyForthcoming));
@@ -33,6 +54,7 @@ impl Responder {
     ///     body.finish(result, None)
     /// # }
     /// ```
+    // TODO: Should we unify this `OutgoingBody` with the HTTP client API?
     pub fn start_response(self, response: Response<BodyForthcoming>) -> OutgoingBody {
         let wasi_headers = header_map_to_wasi(response.headers());
         let wasi_response = OutgoingResponse::new(wasi_headers);
@@ -63,7 +85,7 @@ impl Responder {
     ///
     /// ```
     /// # use wstd::http::{body::IncomingBody, Response, Request};
-    /// # use wstd::http::proxy::{BodyForthcoming, Finished, Responder};
+    /// # use wstd::http::server::{BodyForthcoming, Finished, Responder};
     /// # async fn example(responder: Responder) -> Finished {
     ///     responder
     ///         .respond(Response::new("Hello!\n".as_bytes()), None)
@@ -116,13 +138,13 @@ impl Responder {
         outgoing_body.finish(result, trailers)
     }
 
-    /// This is used by the `proxy` macro.
+    /// This is used by the `http_server` macro.
     #[doc(hidden)]
     pub fn new(outparam: ResponseOutparam) -> Self {
         Self { outparam }
     }
 
-    /// This is used by the `proxy` macro.
+    /// This is used by the `http_server` macro.
     #[doc(hidden)]
     pub fn fail(self, err: WasiHttpErrorCode) -> Finished {
         ResponseOutparam::set(self.outparam, Err(err));
@@ -152,13 +174,13 @@ pub struct OutgoingBody {
 
 impl OutgoingBody {
     /// Finish the body, optionally with trailers, and return a `Finished`
-    /// token to be returned from the proxy [`main` function] to indicate that
-    /// the response is finished.
+    /// token to be returned from the [`http_server`] `main` function to indicate
+    /// that the response is finished.
     ///
     /// `result` is a `std::io::Result` for reporting any I/O errors that
     /// occur while writing to the body stream.
     ///
-    /// [`main` function]: crate::main
+    /// [`http_server`]: crate::http_server
     pub fn finish(self, result: std::io::Result<()>, trailers: Option<HeaderMap>) -> Finished {
         // The stream is a child resource of the `OutgoingBody`, so ensure that
         // it's dropped first.
@@ -223,6 +245,6 @@ pub struct Finished(());
 
 impl Drop for Finished {
     fn drop(&mut self) {
-        unreachable!("`Finished::drop` called; proxy components shouldn't do fallible work after finishing their response");
+        unreachable!("`Finished::drop` called; HTTP-server components shouldn't do fallible work after finishing their response");
     }
 }

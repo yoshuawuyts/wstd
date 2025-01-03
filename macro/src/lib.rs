@@ -84,12 +84,14 @@ pub fn attr_macro_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
     .into()
 }
 
-/// Enables a proxy main function.
+/// Enables a HTTP-server main function, for creating [HTTP servers].
+///
+/// [HTTP servers]: https://docs.rs/wstd/latest/wstd/http/server/index.html
 ///
 /// # Examples
 ///
 /// ```ignore
-/// #[wstd::proxy]
+/// #[wstd::http_server]
 /// async fn main(request: Request<IncomingBody>, responder: Responder) -> Finished {
 ///     responder
 ///         .respond(Response::new(b"Hello!\n"), None)
@@ -97,7 +99,7 @@ pub fn attr_macro_test(_attr: TokenStream, item: TokenStream) -> TokenStream {
 /// }
 /// ```
 #[proc_macro_attribute]
-pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn attr_macro_http_server(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
 
     if input.sig.asyncness.is_none() {
@@ -116,15 +118,15 @@ pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     if name != "main" {
         return quote_spanned! { input.sig.ident.span()=>
-            compile_error!("only `async fn main` can be used for #[wstd::proxy]");
+            compile_error!("only `async fn main` can be used for #[wstd::http_server]");
         }
         .into();
     }
 
     quote! {
-        struct TheProxy;
+        struct TheServer;
 
-        impl ::wstd::wasi::exports::http::incoming_handler::Guest for TheProxy {
+        impl ::wstd::wasi::exports::http::incoming_handler::Guest for TheServer {
             fn handle(
                 request: ::wstd::wasi::http::types::IncomingRequest,
                 response_out: ::wstd::wasi::http::types::ResponseOutparam
@@ -134,8 +136,8 @@ pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
                     #body
                 }
 
-                let responder = ::wstd::http::proxy::Responder::new(response_out);
-                let finished: ::wstd::http::proxy::Finished =
+                let responder = ::wstd::http::server::Responder::new(response_out);
+                let finished: ::wstd::http::server::Finished =
                     match ::wstd::http::try_from_incoming_request(request)
                 {
                     Ok(request) => ::wstd::runtime::block_on(async { __run(request, responder).await }),
@@ -145,12 +147,12 @@ pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        ::wstd::wasi::http::proxy::export!(TheProxy with_types_in ::wstd::wasi);
+        ::wstd::wasi::http::proxy::export!(TheServer with_types_in ::wstd::wasi);
 
         // In case the user needs it, provide a `main` function so that the
         // code compiles.
         #[allow(dead_code)]
-        fn main() { unreachable!("Proxy components should be run with `handle` rather than `main`") }
+        fn main() { unreachable!("HTTP-server components should be run wth `handle` rather than `main`") }
     }
     .into()
 }

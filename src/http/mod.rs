@@ -19,7 +19,7 @@ mod client;
 pub mod error;
 mod fields;
 mod method;
-pub mod proxy;
+pub mod server;
 mod request;
 mod response;
 mod scheme;

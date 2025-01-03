@@ -26,6 +26,12 @@
 #![doc = include_str!("../tests/http_get.rs")]
 //! ```
 //!
+//! **HTTP Server**
+//!
+//! ```rust,no_run
+#![doc = include_str!("../examples/http_server.rs")]
+//! ```
+//!
 //! # Design Decisions
 //!
 //! This library is entirely self-contained. This means that it does not share
@@ -60,10 +66,10 @@ pub mod task;
 pub mod time;
 
 pub use wstd_macro::attr_macro_main as main;
-pub use wstd_macro::attr_macro_proxy as proxy;
+pub use wstd_macro::attr_macro_http_server as http_server;
 pub use wstd_macro::attr_macro_test as test;
 
-// Re-export the wasi crate for use by the `proxy` macro.
+// Re-export the wasi crate for use by the `http_server` macro.
 #[doc(hidden)]
 pub use wasi;
 

@@ -1,9 +1,9 @@
 use wstd::http::body::IncomingBody;
-use wstd::http::proxy::{BodyForthcoming, Finished, Responder};
+use wstd::http::server::{BodyForthcoming, Finished, Responder};
 use wstd::http::{Request, Response};
 use wstd::io::{copy, AsyncWrite};
 
-#[wstd::proxy]
+#[wstd::http_server]
 async fn main(request: Request<IncomingBody>, responder: Responder) -> Finished {
     match request.uri().path_and_query().unwrap().as_str() {
         "/wait" => http_wait(request, responder).await,
