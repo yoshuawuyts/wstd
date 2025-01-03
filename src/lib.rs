@@ -65,8 +65,8 @@ pub mod runtime;
 pub mod task;
 pub mod time;
 
-pub use wstd_macro::attr_macro_main as main;
 pub use wstd_macro::attr_macro_http_server as http_server;
+pub use wstd_macro::attr_macro_main as main;
 pub use wstd_macro::attr_macro_test as test;
 
 // Re-export the wasi crate for use by the `http_server` macro.
