@@ -145,7 +145,7 @@ pub fn attr_macro_proxy(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
 
-        ::wstd::wasi::http::proxy::export!(TheProxy with_types_in wasi);
+        ::wstd::wasi::http::proxy::export!(TheProxy with_types_in ::wstd::wasi);
 
         // In case the user needs it, provide a `main` function so that the
         // code compiles.
