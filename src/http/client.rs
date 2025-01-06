@@ -1,6 +1,6 @@
 use super::{body::IncomingBody, Body, Error, Request, Response, Result};
-use crate::http::request::into_outgoing;
-use crate::http::response::try_from_incoming_response;
+use crate::http::request::try_into_outgoing;
+use crate::http::response::try_from_incoming;
 use crate::io::{self, AsyncOutputStream, AsyncPollable};
 use crate::time::Duration;
 use wasi::http::types::{OutgoingBody, RequestOptions as WasiRequestOptions};
@@ -20,7 +20,7 @@ impl Client {
 
     /// Send an HTTP request.
     pub async fn send<B: Body>(&self, req: Request<B>) -> Result<Response<IncomingBody>> {
-        let (wasi_req, body) = into_outgoing(req)?;
+        let (wasi_req, body) = try_into_outgoing(req)?;
         let wasi_body = wasi_req.body().unwrap();
         let body_stream = wasi_body.write().unwrap();
 
@@ -41,7 +41,7 @@ impl Client {
         // is to trap if we try and get the response more than once. The final
         // `?` is to raise the actual error if there is one.
         let res = res.get().unwrap().unwrap()?;
-        try_from_incoming_response(res)
+        try_from_incoming(res)
     }
 
     /// Set timeout on connecting to HTTP server

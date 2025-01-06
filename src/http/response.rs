@@ -10,9 +10,7 @@ use http::StatusCode;
 
 pub use http::Response;
 
-pub(crate) fn try_from_incoming_response(
-    incoming: IncomingResponse,
-) -> Result<Response<IncomingBody>> {
+pub(crate) fn try_from_incoming(incoming: IncomingResponse) -> Result<Response<IncomingBody>> {
     let headers: HeaderMap = header_map_from_wasi(incoming.headers())?;
     // TODO: Does WASI guarantee that the incoming status is valid?
     let status =
