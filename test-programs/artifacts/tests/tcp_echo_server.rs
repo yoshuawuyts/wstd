@@ -106,6 +106,8 @@ fn tcp_echo_server() -> Result<()> {
     tcpstream.write_all(MESSAGE).context("write to socket")?;
     println!("wrote to echo server");
 
+    tcpstream.shutdown(Shutdown::Write)?;
+
     let mut readback = Vec::new();
     tcpstream
         .read_to_end(&mut readback)
