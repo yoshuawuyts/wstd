@@ -139,6 +139,10 @@ impl AsyncRead for IncomingBody {
     async fn read(&mut self, out_buf: &mut [u8]) -> crate::io::Result<usize> {
         self.body_stream.read(out_buf).await
     }
+
+    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
+        Some(&self.body_stream)
+    }
 }
 
 impl Body for IncomingBody {
