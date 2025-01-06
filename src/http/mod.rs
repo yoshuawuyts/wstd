@@ -9,7 +9,7 @@ pub use client::Client;
 pub use error::{Error, Result};
 pub use fields::{HeaderMap, HeaderName, HeaderValue};
 pub use method::Method;
-pub use request::{try_from_incoming_request, Request};
+pub use request::{try_from_incoming_request, Request, RequestBuilder};
 pub use response::Response;
 pub use scheme::{InvalidUri, Scheme};
 

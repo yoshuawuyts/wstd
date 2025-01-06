@@ -10,7 +10,7 @@ use crate::io::AsyncInputStream;
 use wasi::http::outgoing_handler::OutgoingRequest;
 use wasi::http::types::IncomingRequest;
 
-pub use http::Request;
+pub use http::{request::Builder as RequestBuilder, Request};
 
 pub(crate) fn try_into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, T), Error> {
     let wasi_req = OutgoingRequest::new(header_map_to_wasi(request.headers()));
