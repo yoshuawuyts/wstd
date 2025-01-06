@@ -1,4 +1,4 @@
-use super::{AsyncInputStream, AsyncOutputStream};
+use super::{AsyncInputStream, AsyncOutputStream, AsyncRead, AsyncWrite, Result};
 use std::cell::LazyCell;
 use wasi::cli::terminal_input::TerminalInput;
 use wasi::cli::terminal_output::TerminalOutput;
@@ -19,22 +19,27 @@ pub fn stdin() -> Stdin {
     }
 }
 
-impl std::ops::Deref for Stdin {
-    type Target = AsyncInputStream;
-    fn deref(&self) -> &AsyncInputStream {
-        &self.stream
-    }
-}
-impl std::ops::DerefMut for Stdin {
-    fn deref_mut(&mut self) -> &mut AsyncInputStream {
-        &mut self.stream
-    }
-}
-
 impl Stdin {
     /// Check if stdin is a terminal.
     pub fn is_terminal(&self) -> bool {
         LazyCell::force(&self.terminput).is_some()
+    }
+}
+
+impl AsyncRead for Stdin {
+    #[inline]
+    async fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        self.stream.read(buf).await
+    }
+
+    #[inline]
+    async fn read_to_end(&mut self, buf: &mut Vec<u8>) -> Result<usize> {
+        self.stream.read_to_end(buf).await
+    }
+
+    #[inline]
+    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
+        Some(&self.stream)
     }
 }
 
@@ -61,15 +66,25 @@ impl Stdout {
     }
 }
 
-impl std::ops::Deref for Stdout {
-    type Target = AsyncOutputStream;
-    fn deref(&self) -> &AsyncOutputStream {
-        &self.stream
+impl AsyncWrite for Stdout {
+    #[inline]
+    async fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        self.stream.write(buf).await
     }
-}
-impl std::ops::DerefMut for Stdout {
-    fn deref_mut(&mut self) -> &mut AsyncOutputStream {
-        &mut self.stream
+
+    #[inline]
+    async fn flush(&mut self) -> Result<()> {
+        self.stream.flush().await
+    }
+
+    #[inline]
+    async fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+        self.stream.write_all(buf).await
+    }
+
+    #[inline]
+    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+        self.stream.as_async_output_stream()
     }
 }
 
@@ -96,15 +111,25 @@ impl Stderr {
     }
 }
 
-impl std::ops::Deref for Stderr {
-    type Target = AsyncOutputStream;
-    fn deref(&self) -> &AsyncOutputStream {
-        &self.stream
+impl AsyncWrite for Stderr {
+    #[inline]
+    async fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        self.stream.write(buf).await
     }
-}
-impl std::ops::DerefMut for Stderr {
-    fn deref_mut(&mut self) -> &mut AsyncOutputStream {
-        &mut self.stream
+
+    #[inline]
+    async fn flush(&mut self) -> Result<()> {
+        self.stream.flush().await
+    }
+
+    #[inline]
+    async fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+        self.stream.write_all(buf).await
+    }
+
+    #[inline]
+    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+        self.stream.as_async_output_stream()
     }
 }
 
