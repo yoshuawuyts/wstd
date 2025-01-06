@@ -1,7 +1,7 @@
 //! HTTP body types
 
 use crate::http::fields::header_map_from_wasi;
-use crate::io::{AsyncInputStream, AsyncOutputStream, AsyncRead, AsyncWrite, Cursor, Empty};
+use crate::io::{AsyncInputStream, AsyncOutputStream, AsyncRead, AsyncWrite, Cursor, Empty, Stdin};
 use crate::runtime::AsyncPollable;
 use core::fmt;
 use http::header::{CONTENT_LENGTH, TRANSFER_ENCODING};
@@ -110,6 +110,12 @@ impl<T: AsRef<[u8]>> Body for BoundedBody<T> {
 impl Body for Empty {
     fn len(&self) -> Option<usize> {
         Some(0)
+    }
+}
+
+impl Body for Stdin {
+    fn len(&self) -> Option<usize> {
+        None
     }
 }
 
