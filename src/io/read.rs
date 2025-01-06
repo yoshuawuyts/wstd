@@ -25,3 +25,15 @@ pub trait AsyncRead {
         }
     }
 }
+
+impl<R: AsyncRead + ?Sized> AsyncRead for &mut R {
+    #[inline]
+    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        (*self).read(buf).await
+    }
+
+    #[inline]
+    async fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
+        (*self).read_to_end(buf).await
+    }
+}
