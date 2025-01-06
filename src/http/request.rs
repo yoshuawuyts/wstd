@@ -4,7 +4,7 @@ use wasi::http::types::Scheme;
 
 pub use http::Request;
 
-pub(crate) fn into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, T)> {
+pub(crate) fn try_into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, T)> {
     let wasi_req = OutgoingRequest::new(header_map_to_wasi(request.headers())?);
 
     let (parts, body) = request.into_parts();
