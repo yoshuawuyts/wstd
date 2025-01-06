@@ -2,6 +2,7 @@
 
 use crate::io::{AsyncInputStream, AsyncRead, Cursor, Empty};
 use core::fmt;
+use http::header::{CONTENT_LENGTH, TRANSFER_ENCODING};
 use wasi::http::types::IncomingBody as WasiIncomingBody;
 
 pub use super::{
@@ -17,13 +18,13 @@ pub(crate) enum BodyKind {
 
 impl BodyKind {
     pub(crate) fn from_headers(headers: &HeaderMap) -> Result<BodyKind, InvalidContentLength> {
-        if let Some(value) = headers.get("content-length") {
+        if let Some(value) = headers.get(CONTENT_LENGTH) {
             let content_length = std::str::from_utf8(value.as_ref())
                 .unwrap()
                 .parse::<u64>()
                 .map_err(|_| InvalidContentLength)?;
             Ok(BodyKind::Fixed(content_length))
-        } else if headers.contains_key("transfer-encoding") {
+        } else if headers.contains_key(TRANSFER_ENCODING) {
             Ok(BodyKind::Chunked)
         } else {
             Ok(BodyKind::Chunked)
