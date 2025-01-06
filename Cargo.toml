@@ -23,7 +23,9 @@ wstd-macro.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
+clap.workspace = true
 futures-lite.workspace = true
+humantime.workspace = true
 serde_json.workspace = true
 
 [workspace]
@@ -49,8 +51,10 @@ authors = [
 [workspace.dependencies]
 anyhow = "1"
 cargo_metadata = "0.18.1"
+clap = { version = "4.5.26", features = ["derive"] }
 futures-core = "0.3.19"
 futures-lite = "1.12.0"
+humantime = "2.1.0"
 heck = "0.5"
 http = "1.1"
 itoa = "1"
