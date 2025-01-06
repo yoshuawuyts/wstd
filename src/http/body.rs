@@ -1,6 +1,8 @@
 //! HTTP body types
 
+use crate::http::fields::header_map_from_wasi;
 use crate::io::{AsyncInputStream, AsyncOutputStream, AsyncRead, AsyncWrite, Cursor, Empty};
+use crate::runtime::AsyncPollable;
 use core::fmt;
 use http::header::{CONTENT_LENGTH, TRANSFER_ENCODING};
 use wasi::http::types::IncomingBody as WasiIncomingBody;
@@ -116,9 +118,9 @@ impl Body for Empty {
 pub struct IncomingBody {
     kind: BodyKind,
     // IMPORTANT: the order of these fields here matters. `body_stream` must
-    // be dropped before `_incoming_body`.
+    // be dropped before `incoming_body`.
     body_stream: AsyncInputStream,
-    _incoming_body: WasiIncomingBody,
+    incoming_body: WasiIncomingBody,
 }
 
 impl IncomingBody {
@@ -130,8 +132,28 @@ impl IncomingBody {
         Self {
             kind,
             body_stream,
-            _incoming_body: incoming_body,
+            incoming_body,
         }
+    }
+
+    /// Consume this `IncomingBody` and return the trailers, if present.
+    pub async fn finish(self) -> Result<Option<HeaderMap>, Error> {
+        // The stream is a child resource of the `IncomingBody`, so ensure that
+        // it's dropped first.
+        drop(self.body_stream);
+
+        let trailers = WasiIncomingBody::finish(self.incoming_body);
+
+        AsyncPollable::new(trailers.subscribe()).wait_for().await;
+
+        let trailers = trailers.get().unwrap().unwrap()?;
+
+        let trailers = match trailers {
+            None => None,
+            Some(trailers) => Some(header_map_from_wasi(trailers)?),
+        };
+
+        Ok(trailers)
     }
 }
 
