@@ -1,7 +1,8 @@
 use anyhow::{anyhow, Result};
 use clap::{ArgAction, Parser};
 use wstd::http::{
-    body::IncomingBody, Body, Client, Method, Request, RequestBuilder, Response, Uri,
+    body::{IncomingBody, StreamedBody},
+    Body, Client, Method, Request, RequestBuilder, Response, Uri,
 };
 
 /// Simple HTTP client
@@ -89,7 +90,7 @@ async fn main() -> Result<()> {
         Ok(client.send(request).await?)
     }
     let response = if args.body {
-        send_request(&client, request, wstd::io::stdin()).await
+        send_request(&client, request, StreamedBody::new(wstd::io::stdin())).await
     } else {
         send_request(&client, request, wstd::io::empty()).await
     }?;
