@@ -77,7 +77,7 @@ fn run_in_wasmtime(wasm: &[u8], stdout: Option<MemoryOutputPipe>) -> Result<()> 
 #[test_log::test]
 fn tcp_echo_server() -> Result<()> {
     use std::io::{Read, Write};
-    use std::net::TcpStream;
+    use std::net::{Shutdown, TcpStream};
     use std::thread::sleep;
     use std::time::Duration;
 
@@ -105,6 +105,8 @@ fn tcp_echo_server() -> Result<()> {
 
     tcpstream.write_all(MESSAGE).context("write to socket")?;
     println!("wrote to echo server");
+
+    tcpstream.shutdown(Shutdown::Write)?;
 
     let mut readback = Vec::new();
     tcpstream

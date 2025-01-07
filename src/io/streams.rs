@@ -32,10 +32,8 @@ impl AsyncInputStream {
             .wait_for()
             .await;
     }
-}
-
-impl AsyncRead for AsyncInputStream {
-    async fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+    /// Like [`AsyncRead::read`], but doesn't require a `&mut self`.
+    pub async fn read(&self, buf: &mut [u8]) -> Result<usize> {
         self.ready().await;
         // Ideally, the ABI would be able to read directly into buf. However, with the default
         // generated bindings, it returns a newly allocated vec, which we need to copy into buf.
@@ -54,6 +52,17 @@ impl AsyncRead for AsyncInputStream {
         let len = read.len();
         buf[0..len].copy_from_slice(&read);
         Ok(len)
+    }
+}
+
+impl AsyncRead for AsyncInputStream {
+    async fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        Self::read(self, buf).await
+    }
+
+    #[inline]
+    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
+        Some(self)
     }
 }
 
@@ -86,10 +95,8 @@ impl AsyncOutputStream {
             .wait_for()
             .await;
     }
-}
-impl AsyncWrite for AsyncOutputStream {
-    // Required methods
-    async fn write(&mut self, buf: &[u8]) -> Result<usize> {
+    /// Like [`AsyncWrite::write`], but doesn't require a `&mut self`.
+    pub async fn write(&self, buf: &[u8]) -> Result<usize> {
         // Loops at most twice.
         loop {
             match self.stream.check_write() {
@@ -119,7 +126,8 @@ impl AsyncWrite for AsyncOutputStream {
             }
         }
     }
-    async fn flush(&mut self) -> Result<()> {
+    /// Like [`AsyncWrite::flush`], but doesn't require a `&mut self`.
+    pub async fn flush(&self) -> Result<()> {
         match self.stream.flush() {
             Ok(()) => {
                 self.ready().await;
@@ -133,4 +141,32 @@ impl AsyncWrite for AsyncOutputStream {
             }
         }
     }
+}
+impl AsyncWrite for AsyncOutputStream {
+    // Required methods
+    async fn write(&mut self, buf: &[u8]) -> Result<usize> {
+        Self::write(self, buf).await
+    }
+    async fn flush(&mut self) -> Result<()> {
+        Self::flush(self).await
+    }
+
+    #[inline]
+    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+        Some(self)
+    }
+}
+
+/// Wait for both streams to be ready and then do a WASI splice.
+pub(crate) async fn splice(
+    reader: &AsyncInputStream,
+    writer: &AsyncOutputStream,
+    len: u64,
+) -> core::result::Result<u64, StreamError> {
+    // Wait for both streams to be ready.
+    let r = reader.ready();
+    writer.ready().await;
+    r.await;
+
+    writer.stream.splice(&reader.stream, len)
 }

@@ -16,21 +16,33 @@ pub trait AsyncWrite {
             }
         }
     }
+
+    // If the `AsyncWrite` implementation is an unbuffered wrapper around an
+    // `AsyncOutputStream`, some I/O operations can be more efficient.
+    #[inline]
+    fn as_async_output_stream(&self) -> Option<&io::AsyncOutputStream> {
+        None
+    }
 }
 
 impl<W: AsyncWrite + ?Sized> AsyncWrite for &mut W {
     #[inline]
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        (*self).write(buf).await
+        (**self).write(buf).await
     }
 
     #[inline]
     async fn flush(&mut self) -> io::Result<()> {
-        (*self).flush().await
+        (**self).flush().await
     }
 
     #[inline]
     async fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
-        (*self).write_all(buf).await
+        (**self).write_all(buf).await
+    }
+
+    #[inline]
+    fn as_async_output_stream(&self) -> Option<&io::AsyncOutputStream> {
+        (**self).as_async_output_stream()
     }
 }

@@ -1,24 +1,22 @@
-use std::cell::RefCell;
-
 use wasi::{
     io::streams::{InputStream, OutputStream},
     sockets::tcp::TcpSocket,
 };
 
-use crate::io::{self, AsyncInputStream, AsyncOutputStream, AsyncRead, AsyncWrite};
+use crate::io::{self, AsyncInputStream, AsyncOutputStream};
 
 /// A TCP stream between a local and a remote socket.
 pub struct TcpStream {
-    input: RefCell<AsyncInputStream>,
-    output: RefCell<AsyncOutputStream>,
+    input: AsyncInputStream,
+    output: AsyncOutputStream,
     socket: TcpSocket,
 }
 
 impl TcpStream {
     pub(crate) fn new(input: InputStream, output: OutputStream, socket: TcpSocket) -> Self {
         TcpStream {
-            input: RefCell::new(AsyncInputStream::new(input)),
-            output: RefCell::new(AsyncOutputStream::new(output)),
+            input: AsyncInputStream::new(input),
+            output: AsyncOutputStream::new(output),
             socket,
         }
     }
@@ -42,42 +40,62 @@ impl Drop for TcpStream {
     }
 }
 
-impl AsyncRead for TcpStream {
+impl io::AsyncRead for TcpStream {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.input.borrow_mut().read(buf).await
+        self.input.read(buf).await
+    }
+
+    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
+        Some(&self.input)
     }
 }
 
-impl AsyncRead for &TcpStream {
+impl io::AsyncRead for &TcpStream {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.input.borrow_mut().read(buf).await
+        self.input.read(buf).await
+    }
+
+    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
+        (**self).as_async_input_stream()
     }
 }
 
-impl AsyncWrite for TcpStream {
+impl io::AsyncWrite for TcpStream {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.output.borrow_mut().write(buf).await
+        self.output.write(buf).await
     }
 
     async fn flush(&mut self) -> io::Result<()> {
-        self.output.borrow_mut().flush().await
+        self.output.flush().await
+    }
+
+    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+        Some(&self.output)
     }
 }
 
-impl AsyncWrite for &TcpStream {
+impl io::AsyncWrite for &TcpStream {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.output.borrow_mut().write(buf).await
+        self.output.write(buf).await
     }
 
     async fn flush(&mut self) -> io::Result<()> {
-        self.output.borrow_mut().flush().await
+        self.output.flush().await
+    }
+
+    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+        (**self).as_async_output_stream()
     }
 }
 
 pub struct ReadHalf<'a>(&'a TcpStream);
-impl<'a> AsyncRead for ReadHalf<'a> {
+impl<'a> io::AsyncRead for ReadHalf<'a> {
     async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.0.read(buf).await
+    }
+
+    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
+        self.0.as_async_input_stream()
     }
 }
 
@@ -91,13 +109,17 @@ impl<'a> Drop for ReadHalf<'a> {
 }
 
 pub struct WriteHalf<'a>(&'a TcpStream);
-impl<'a> AsyncWrite for WriteHalf<'a> {
+impl<'a> io::AsyncWrite for WriteHalf<'a> {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.0.write(buf).await
     }
 
     async fn flush(&mut self) -> io::Result<()> {
         self.0.flush().await
+    }
+
+    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+        self.0.as_async_output_stream()
     }
 }
 
