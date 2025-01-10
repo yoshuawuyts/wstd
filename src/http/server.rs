@@ -107,13 +107,9 @@ impl Responder {
 
         // Automatically add a Content-Length header.
         if let Some(len) = body.len() {
-            // TODO: Remove the `to_owned()` calls after bytecodealliance/wit-bindgen#1102.
             let mut buffer = itoa::Buffer::new();
             wasi_headers
-                .append(
-                    &CONTENT_LENGTH.as_str().to_owned(),
-                    &buffer.format(len).to_owned().into_bytes(),
-                )
+                .append(&CONTENT_LENGTH.as_str(), &buffer.format(len).as_bytes())
                 .unwrap();
         }
 
