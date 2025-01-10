@@ -1,13 +1,15 @@
 use wstd::http::body::{BodyForthcoming, IncomingBody, OutgoingBody};
 use wstd::http::server::{Finished, Responder};
 use wstd::http::{IntoBody, Request, Response};
-use wstd::io::{copy, AsyncWrite};
+use wstd::io::{copy, empty, AsyncWrite};
 
 #[wstd::http_server]
 async fn main(request: Request<IncomingBody>, responder: Responder) -> Finished {
     match request.uri().path_and_query().unwrap().as_str() {
         "/wait" => http_wait(request, responder).await,
         "/echo" => http_echo(request, responder).await,
+        "/echo-headers" => http_echo_headers(request, responder).await,
+        "/echo-trailers" => http_echo_trailers(request, responder).await,
         "/fail" => http_fail(request, responder).await,
         "/bigfail" => http_bigfail(request, responder).await,
         "/" | _ => http_home(request, responder).await,
@@ -66,4 +68,20 @@ async fn http_bigfail(_request: Request<IncomingBody>, responder: Responder) -> 
     let mut body = responder.start_response(Response::new(BodyForthcoming));
     let _ = write_body(&mut body).await;
     Finished::fail(body)
+}
+
+async fn http_echo_headers(request: Request<IncomingBody>, responder: Responder) -> Finished {
+    let mut response = Response::builder();
+    *response.headers_mut().unwrap() = request.headers().clone();
+    let response = response.body(empty()).unwrap();
+    responder.respond(response).await
+}
+
+async fn http_echo_trailers(request: Request<IncomingBody>, responder: Responder) -> Finished {
+    let body = responder.start_response(Response::new(BodyForthcoming));
+    let (trailers, result) = match request.into_body().finish().await {
+        Ok(trailers) => (trailers, Ok(())),
+        Err(err) => (Default::default(), Err(std::io::Error::other(err))),
+    };
+    Finished::finish(body, result, trailers)
 }

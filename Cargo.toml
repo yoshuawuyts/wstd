@@ -49,6 +49,7 @@ authors = [
 [workspace.dependencies]
 anyhow = "1"
 cargo_metadata = "0.18.1"
+clap = { version = "4.5.23", features = ["derive"] }
 futures-core = "0.3.19"
 futures-lite = "1.12.0"
 heck = "0.5"
@@ -62,8 +63,10 @@ syn = "2.0"
 test-log = { version = "0.2", features = ["trace"] }
 test-programs = { path = "test-programs" }
 test-programs-artifacts = { path = "test-programs/artifacts" }
+ureq = "2.12.1"
 wasi = "0.13.1"
 wasmtime = "26"
+wasmtime-cli = "26"
 wasmtime-wasi = "26"
 wasmtime-wasi-http = "26"
 wstd = { path = "." }
