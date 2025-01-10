@@ -15,6 +15,7 @@ categories.workspace = true
 [dependencies]
 futures-core.workspace = true
 http.workspace = true
+itoa.workspace = true
 pin-project-lite.workspace = true
 slab.workspace = true
 wasi.workspace = true
@@ -22,7 +23,9 @@ wstd-macro.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
+clap.workspace = true
 futures-lite.workspace = true
+humantime.workspace = true
 serde_json.workspace = true
 
 [workspace]
@@ -48,10 +51,13 @@ authors = [
 [workspace.dependencies]
 anyhow = "1"
 cargo_metadata = "0.18.1"
+clap = { version = "4.5.23", features = ["derive"] }
 futures-core = "0.3.19"
 futures-lite = "1.12.0"
+humantime = "2.1.0"
 heck = "0.5"
 http = "1.1"
+itoa = "1"
 pin-project-lite = "0.2.8"
 quote = "1.0"
 serde_json = "1"
@@ -60,8 +66,10 @@ syn = "2.0"
 test-log = { version = "0.2", features = ["trace"] }
 test-programs = { path = "test-programs" }
 test-programs-artifacts = { path = "test-programs/artifacts" }
-wasi = "0.13.1"
+ureq = "2.12.1"
+wasi = "0.14.0"
 wasmtime = "26"
+wasmtime-cli = "26"
 wasmtime-wasi = "26"
 wasmtime-wasi-http = "26"
 wstd = { path = "." }
