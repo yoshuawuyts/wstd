@@ -71,7 +71,7 @@ async fn http_bigfail(_request: Request<IncomingBody>, responder: Responder) -> 
 
 async fn http_echo_headers(request: Request<IncomingBody>, responder: Responder) -> Finished {
     let mut response = Response::builder();
-    *response.headers_mut().unwrap() = request.headers().clone();
+    *response.headers_mut().unwrap() = request.into_parts().0.headers;
     let response = response.body(empty()).unwrap();
     responder.respond(response).await
 }
