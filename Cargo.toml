@@ -63,7 +63,7 @@ syn = "2.0"
 test-log = { version = "0.2", features = ["trace"] }
 test-programs = { path = "test-programs" }
 test-programs-artifacts = { path = "test-programs/artifacts" }
-ureq = "2.12.1"
+ureq = { version = "2.12.1", default-features = false }
 wasi = "0.14.0"
 wasmtime = "26"
 wasmtime-cli = "26"
