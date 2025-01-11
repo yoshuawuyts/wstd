@@ -1,6 +1,6 @@
 use wstd::http::body::{BodyForthcoming, IncomingBody, OutgoingBody};
 use wstd::http::server::{Finished, Responder};
-use wstd::http::{IntoBody, Request, Response};
+use wstd::http::{IntoBody, Request, Response, StatusCode};
 use wstd::io::{copy, empty, AsyncWrite};
 use wstd::time::{Duration, Instant};
 
@@ -13,7 +13,8 @@ async fn main(request: Request<IncomingBody>, responder: Responder) -> Finished 
         "/echo-trailers" => http_echo_trailers(request, responder).await,
         "/fail" => http_fail(request, responder).await,
         "/bigfail" => http_bigfail(request, responder).await,
-        "/" | _ => http_home(request, responder).await,
+        "/" => http_home(request, responder).await,
+        _ => http_not_found(request, responder).await,
     }
 }
 
@@ -82,4 +83,12 @@ async fn http_echo_trailers(request: Request<IncomingBody>, responder: Responder
         Err(err) => (Default::default(), Err(std::io::Error::other(err))),
     };
     Finished::finish(body, result, trailers)
+}
+
+async fn http_not_found(_request: Request<IncomingBody>, responder: Responder) -> Finished {
+    let response = Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .body(empty())
+        .unwrap();
+    responder.respond(response).await
 }
