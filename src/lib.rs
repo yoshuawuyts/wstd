@@ -26,6 +26,12 @@
 #![doc = include_str!("../tests/http_get.rs")]
 //! ```
 //!
+//! **HTTP Server**
+//!
+//! ```rust,no_run
+#![doc = include_str!("../examples/http_server.rs")]
+//! ```
+//!
 //! # Design Decisions
 //!
 //! This library is entirely self-contained. This means that it does not share
@@ -49,6 +55,7 @@
 //! is specific to that are exposed from here.
 
 pub mod future;
+#[macro_use]
 pub mod http;
 pub mod io;
 pub mod iter;
@@ -58,8 +65,13 @@ pub mod runtime;
 pub mod task;
 pub mod time;
 
+pub use wstd_macro::attr_macro_http_server as http_server;
 pub use wstd_macro::attr_macro_main as main;
 pub use wstd_macro::attr_macro_test as test;
+
+// Re-export the wasi crate for use by the `http_server` macro.
+#[doc(hidden)]
+pub use wasi;
 
 pub mod prelude {
     pub use crate::future::FutureExt as _;
