@@ -70,6 +70,34 @@ impl Duration {
     pub fn from_secs_f32(secs: f32) -> Duration {
         std::time::Duration::from_secs_f32(secs).into()
     }
+
+    /// Returns the number of whole seconds contained by this `Duration`.
+    #[must_use]
+    #[inline]
+    pub const fn as_secs(&self) -> u64 {
+        self.0 / 1_000_000_000
+    }
+
+    /// Returns the number of whole microseconds contained by this `Duration`.
+    #[must_use]
+    #[inline]
+    pub const fn as_micros(&self) -> u128 {
+        (self.0 / 1_000_000) as u128
+    }
+
+    /// Returns the number of whole milliseconds contained by this `Duration`.
+    #[must_use]
+    #[inline]
+    pub const fn as_millis(&self) -> u128 {
+        (self.0 / 1_000) as u128
+    }
+
+    /// Returns the total number of nanoseconds contained by this `Duration`.
+    #[must_use]
+    #[inline]
+    pub const fn as_nanos(&self) -> u128 {
+        self.0 as u128
+    }
 }
 
 impl std::ops::Deref for Duration {

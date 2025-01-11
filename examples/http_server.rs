@@ -2,6 +2,7 @@ use wstd::http::body::{BodyForthcoming, IncomingBody, OutgoingBody};
 use wstd::http::server::{Finished, Responder};
 use wstd::http::{IntoBody, Request, Response};
 use wstd::io::{copy, empty, AsyncWrite};
+use wstd::time::{Duration, Instant};
 
 #[wstd::http_server]
 async fn main(request: Request<IncomingBody>, responder: Responder) -> Finished {
@@ -25,16 +26,13 @@ async fn http_home(_request: Request<IncomingBody>, responder: Responder) -> Fin
 
 async fn http_wait(_request: Request<IncomingBody>, responder: Responder) -> Finished {
     // Get the time now
-    let now = wasi::clocks::monotonic_clock::now();
+    let now = Instant::now();
 
-    // Sleep for 1 second
-    let nanos = 1_000_000_000;
-    let pollable = wasi::clocks::monotonic_clock::subscribe_duration(nanos);
-    pollable.block();
+    // Sleep for one second.
+    wstd::task::sleep(Duration::from_secs(1)).await;
 
     // Compute how long we slept for.
-    let elapsed = wasi::clocks::monotonic_clock::now() - now;
-    let elapsed = elapsed / 1_000_000; // change to millis
+    let elapsed = Instant::now().duration_since(now).as_millis();
 
     // To stream data to the response body, use `Responder::start_response`.
     let mut body = responder.start_response(Response::new(BodyForthcoming));
