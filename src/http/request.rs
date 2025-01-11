@@ -63,26 +63,17 @@ pub fn try_from_incoming_request(
 
     let method = from_wasi_method(incoming.method())
         .map_err(|_| WasiHttpErrorCode::HttpRequestMethodInvalid)?;
-    let scheme = match incoming.scheme() {
-        Some(scheme) => Some(
-            from_wasi_scheme(scheme).expect("TODO: what shall we do with an invalid uri here?"),
-        ),
-        None => None,
-    };
-    let authority = match incoming.authority() {
-        Some(authority) => Some(
-            Authority::from_maybe_shared(authority)
-                .expect("TODO: what shall we do with an invalid uri authority here?"),
-        ),
-        None => None,
-    };
-    let path_and_query = match incoming.path_with_query() {
-        Some(path_and_query) => Some(
-            PathAndQuery::from_maybe_shared(path_and_query)
-                .expect("TODO: what shall we do with an invalid uri path-and-query here?"),
-        ),
-        None => None,
-    };
+    let scheme = incoming.scheme().map(|scheme| {
+        from_wasi_scheme(scheme).expect("TODO: what shall we do with an invalid uri here?")
+    });
+    let authority = incoming.authority().map(|authority| {
+        Authority::from_maybe_shared(authority)
+            .expect("TODO: what shall we do with an invalid uri authority here?")
+    });
+    let path_and_query = incoming.path_with_query().map(|path_and_query| {
+        PathAndQuery::from_maybe_shared(path_and_query)
+            .expect("TODO: what shall we do with an invalid uri path-and-query here?")
+    });
 
     // TODO: What's the right error code to use for invalid headers?
     let kind = BodyKind::from_headers(&headers)
