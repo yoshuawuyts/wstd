@@ -150,7 +150,6 @@ pub fn attr_macro_http_server(_attr: TokenStream, item: TokenStream) -> TokenStr
 
         // In case the user needs it, provide a `main` function so that the
         // code compiles.
-        #[allow(dead_code)]
         fn main() { unreachable!("HTTP-server components should be run wth `handle` rather than `main`") }
     }
     .into()
