@@ -170,15 +170,13 @@ impl Finished {
         // it's dropped first.
         drop(stream);
 
-        if result.is_ok() {
-            let wasi_trailers = trailers.map(|trailers| header_map_to_wasi(&trailers));
+        // If there was an I/O error, panic and don't call `OutgoingBody::finish`.
+        let _ = result.expect("I/O error while writing the body");
 
-            wasi::http::types::OutgoingBody::finish(body, wasi_trailers)
-                .expect("body length did not match Content-Length header value");
-        } else {
-            // As in `fail`, there's no need to do anything else on failure.
-            // TODO: Should we log the failure somewhere?
-        }
+        let wasi_trailers = trailers.map(|trailers| header_map_to_wasi(&trailers));
+
+        wasi::http::types::OutgoingBody::finish(body, wasi_trailers)
+            .expect("body length did not match Content-Length header value");
 
         Self(())
     }
