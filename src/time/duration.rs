@@ -41,6 +41,13 @@ impl Duration {
         std::time::Duration::from_micros(micros).into()
     }
 
+    /// Creates a new `Duration` from the specified number of nanoseconds.
+    #[must_use]
+    #[inline]
+    pub fn from_nanos(nanos: u64) -> Self {
+        std::time::Duration::from_nanos(nanos).into()
+    }
+
     /// Creates a new `Duration` from the specified number of seconds represented
     /// as `f64`.
     ///
@@ -78,17 +85,17 @@ impl Duration {
         self.0 / 1_000_000_000
     }
 
-    /// Returns the number of whole microseconds contained by this `Duration`.
-    #[must_use]
-    #[inline]
-    pub const fn as_micros(&self) -> u128 {
-        (self.0 / 1_000_000) as u128
-    }
-
     /// Returns the number of whole milliseconds contained by this `Duration`.
     #[must_use]
     #[inline]
     pub const fn as_millis(&self) -> u128 {
+        (self.0 / 1_000_000) as u128
+    }
+
+    /// Returns the number of whole microseconds contained by this `Duration`.
+    #[must_use]
+    #[inline]
+    pub const fn as_micros(&self) -> u128 {
         (self.0 / 1_000) as u128
     }
 
@@ -166,5 +173,58 @@ impl IntoFuture for Duration {
 
     fn into_future(self) -> Self::IntoFuture {
         crate::task::sleep(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_new_from_as() {
+        assert_eq!(Duration::new(456, 864209753).as_secs(), 456);
+        assert_eq!(Duration::new(456, 864209753).as_millis(), 456864);
+        assert_eq!(Duration::new(456, 864209753).as_micros(), 456864209);
+        assert_eq!(Duration::new(456, 864209753).as_nanos(), 456864209753);
+
+        assert_eq!(Duration::from_secs(9876543210).as_secs(), 9876543210);
+        assert_eq!(Duration::from_secs(9876543210).as_millis(), 9876543210_000);
+        assert_eq!(
+            Duration::from_secs(9876543210).as_micros(),
+            9876543210_000000
+        );
+        assert_eq!(
+            Duration::from_secs(9876543210).as_nanos(),
+            9876543210_000000000
+        );
+
+        assert_eq!(Duration::from_millis(9876543210).as_secs(), 9876543);
+        assert_eq!(Duration::from_millis(9876543210).as_millis(), 9876543210);
+        assert_eq!(
+            Duration::from_millis(9876543210).as_micros(),
+            9876543210_000
+        );
+        assert_eq!(
+            Duration::from_millis(9876543210).as_nanos(),
+            9876543210_000000
+        );
+
+        assert_eq!(Duration::from_micros(9876543210).as_secs(), 9876);
+        assert_eq!(Duration::from_micros(9876543210).as_millis(), 9876543);
+        assert_eq!(Duration::from_micros(9876543210).as_micros(), 9876543210);
+        assert_eq!(Duration::from_micros(9876543210).as_nanos(), 9876543210_000);
+
+        assert_eq!(Duration::from_nanos(9876543210).as_secs(), 9);
+        assert_eq!(Duration::from_nanos(9876543210).as_millis(), 9876);
+        assert_eq!(Duration::from_nanos(9876543210).as_micros(), 9876543);
+        assert_eq!(Duration::from_nanos(9876543210).as_nanos(), 9876543210);
+    }
+
+    #[test]
+    fn test_from_secs_float() {
+        assert_eq!(Duration::from_secs_f64(158.9).as_secs(), 158);
+        assert_eq!(Duration::from_secs_f32(158.9).as_secs(), 158);
+        assert_eq!(Duration::from_secs_f64(159.1).as_secs(), 159);
+        assert_eq!(Duration::from_secs_f32(159.1).as_secs(), 159);
     }
 }
