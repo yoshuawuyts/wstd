@@ -61,7 +61,7 @@ impl Responder {
     /// # }
     /// ```
     pub fn start_response(self, response: Response<BodyForthcoming>) -> OutgoingBody {
-        let wasi_headers = header_map_to_wasi(response.headers());
+        let wasi_headers = header_map_to_wasi(response.headers()).expect("header error");
         let wasi_response = OutgoingResponse::new(wasi_headers);
         let wasi_status = response.status().as_u16();
 
@@ -100,7 +100,7 @@ impl Responder {
         let headers = response.headers();
         let status = response.status().as_u16();
 
-        let wasi_headers = header_map_to_wasi(headers);
+        let wasi_headers = header_map_to_wasi(headers).expect("header error");
 
         // Consume the `response` and prepare to write the body.
         let mut body = response.into_body();
@@ -173,7 +173,8 @@ impl Finished {
         // If there was an I/O error, panic and don't call `OutgoingBody::finish`.
         let _ = result.expect("I/O error while writing the body");
 
-        let wasi_trailers = trailers.map(|trailers| header_map_to_wasi(&trailers));
+        let wasi_trailers =
+            trailers.map(|trailers| header_map_to_wasi(&trailers).expect("header error"));
 
         wasi::http::types::OutgoingBody::finish(body, wasi_trailers)
             .expect("body length did not match Content-Length header value");

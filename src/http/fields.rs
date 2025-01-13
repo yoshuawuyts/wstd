@@ -1,9 +1,9 @@
 pub use http::header::{HeaderMap, HeaderName, HeaderValue};
 
-use super::{Error, Result};
-use wasi::http::types::Fields;
+use super::Error;
+use wasi::http::types::{Fields, HeaderError as WasiHttpHeaderError};
 
-pub(crate) fn header_map_from_wasi(wasi_fields: Fields) -> Result<HeaderMap> {
+pub(crate) fn header_map_from_wasi(wasi_fields: Fields) -> Result<HeaderMap, Error> {
     let mut output = HeaderMap::new();
     for (key, value) in wasi_fields.entries() {
         let key = HeaderName::from_bytes(key.as_bytes())
@@ -15,13 +15,22 @@ pub(crate) fn header_map_from_wasi(wasi_fields: Fields) -> Result<HeaderMap> {
     Ok(output)
 }
 
-pub(crate) fn header_map_to_wasi(header_map: &HeaderMap) -> Fields {
+pub(crate) fn header_map_to_wasi(header_map: &HeaderMap) -> Result<Fields, ToWasiHeaderError> {
     let wasi_fields = Fields::new();
     for (key, value) in header_map {
         // Unwrap because `HeaderMap` has already validated the headers.
         wasi_fields
             .append(&key.as_str(), &value.as_bytes())
-            .unwrap_or_else(|err| panic!("header named {key}: {err:?}"));
+            .map_err(|error| ToWasiHeaderError {
+                error,
+                context: format!("header {key}: {value:?}"),
+            })?;
     }
-    wasi_fields
+    Ok(wasi_fields)
+}
+
+#[derive(Debug)]
+pub(crate) struct ToWasiHeaderError {
+    pub(crate) error: WasiHttpHeaderError,
+    pub(crate) context: String,
 }

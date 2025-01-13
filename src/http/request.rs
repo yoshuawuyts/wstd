@@ -13,7 +13,7 @@ use wasi::http::types::IncomingRequest;
 pub use http::Request;
 
 pub(crate) fn try_into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, T), Error> {
-    let wasi_req = OutgoingRequest::new(header_map_to_wasi(request.headers()));
+    let wasi_req = OutgoingRequest::new(header_map_to_wasi(request.headers())?);
 
     let (parts, body) = request.into_parts();
 
