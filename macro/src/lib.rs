@@ -154,7 +154,7 @@ pub fn attr_macro_http_server(_attr: TokenStream, item: TokenStream) -> TokenStr
         // They export a function named `handle` which takes a `Request`
         // argument, and which may be called multiple times on the same
         // instance. To let users write a familiar `fn main` in a file
-        // named src/main.rs, we provide this `wstd::main` macro, which
+        // named src/main.rs, we provide this `wstd::http_server` macro, which
         // transforms the user's `fn main` into the appropriate `handle`
         // function.
         //
