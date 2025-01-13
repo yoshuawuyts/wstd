@@ -1,6 +1,8 @@
 //! HTTP body types
 
-use crate::io::{AsyncInputStream, AsyncRead, Cursor, Empty};
+use crate::http::fields::header_map_from_wasi;
+use crate::io::{AsyncInputStream, AsyncOutputStream, AsyncRead, AsyncWrite, Cursor, Empty};
+use crate::runtime::AsyncPollable;
 use core::fmt;
 use http::header::{CONTENT_LENGTH, TRANSFER_ENCODING};
 use wasi::http::types::IncomingBody as WasiIncomingBody;
@@ -116,9 +118,9 @@ impl Body for Empty {
 pub struct IncomingBody {
     kind: BodyKind,
     // IMPORTANT: the order of these fields here matters. `body_stream` must
-    // be dropped before `_incoming_body`.
+    // be dropped before `incoming_body`.
     body_stream: AsyncInputStream,
-    _incoming_body: WasiIncomingBody,
+    incoming_body: WasiIncomingBody,
 }
 
 impl IncomingBody {
@@ -130,8 +132,28 @@ impl IncomingBody {
         Self {
             kind,
             body_stream,
-            _incoming_body: incoming_body,
+            incoming_body,
         }
+    }
+
+    /// Consume this `IncomingBody` and return the trailers, if present.
+    pub async fn finish(self) -> Result<Option<HeaderMap>, Error> {
+        // The stream is a child resource of the `IncomingBody`, so ensure that
+        // it's dropped first.
+        drop(self.body_stream);
+
+        let trailers = WasiIncomingBody::finish(self.incoming_body);
+
+        AsyncPollable::new(trailers.subscribe()).wait_for().await;
+
+        let trailers = trailers.get().unwrap().unwrap()?;
+
+        let trailers = match trailers {
+            None => None,
+            Some(trailers) => Some(header_map_from_wasi(trailers)?),
+        };
+
+        Ok(trailers)
     }
 }
 
@@ -177,3 +199,79 @@ impl From<InvalidContentLength> for Error {
         ErrorVariant::Other(e.to_string()).into()
     }
 }
+
+/// The output stream for the body, implementing [`AsyncWrite`]. Call
+/// [`Responder::start_response`] to obtain one. Once the body is complete,
+/// it must be declared finished, using [`OutgoingBody::finish`].
+#[must_use]
+pub struct OutgoingBody {
+    // IMPORTANT: the order of these fields here matters. `stream` must
+    // be dropped before `body`.
+    stream: AsyncOutputStream,
+    body: wasi::http::types::OutgoingBody,
+    dontdrop: DontDropOutgoingBody,
+}
+
+impl OutgoingBody {
+    pub(crate) fn new(stream: AsyncOutputStream, body: wasi::http::types::OutgoingBody) -> Self {
+        Self {
+            stream,
+            body,
+            dontdrop: DontDropOutgoingBody,
+        }
+    }
+
+    pub(crate) fn consume(self) -> (AsyncOutputStream, wasi::http::types::OutgoingBody) {
+        let Self {
+            stream,
+            body,
+            dontdrop,
+        } = self;
+
+        std::mem::forget(dontdrop);
+
+        (stream, body)
+    }
+
+    /// Return a reference to the underlying `AsyncOutputStream`.
+    ///
+    /// This usually isn't needed, as `OutgoingBody` implements `AsyncWrite`
+    /// too, however it is useful for code that expects to work with
+    /// `AsyncOutputStream` specifically.
+    pub fn stream(&mut self) -> &mut AsyncOutputStream {
+        &mut self.stream
+    }
+}
+
+impl AsyncWrite for OutgoingBody {
+    async fn write(&mut self, buf: &[u8]) -> crate::io::Result<usize> {
+        self.stream.write(buf).await
+    }
+
+    async fn flush(&mut self) -> crate::io::Result<()> {
+        self.stream.flush().await
+    }
+
+    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+        Some(&self.stream)
+    }
+}
+
+/// A utility to ensure that `OutgoingBody` is either finished or failed, and
+/// not implicitly dropped.
+struct DontDropOutgoingBody;
+
+impl Drop for DontDropOutgoingBody {
+    fn drop(&mut self) {
+        unreachable!("`OutgoingBody::drop` called; `OutgoingBody`s should be consumed with `finish` or `fail`.");
+    }
+}
+
+/// A placeholder for use as the type parameter to [`Response`] to indicate
+/// that the body has not yet started. This is used with
+/// [`Responder::start_response`], which has a `Response<BodyForthcoming>`
+/// argument.
+///
+/// To instead start the response and obtain the output stream for the body,
+/// use [`Responder::respond`].
+pub struct BodyForthcoming;

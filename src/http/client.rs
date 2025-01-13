@@ -20,6 +20,8 @@ impl Client {
 
     /// Send an HTTP request.
     pub async fn send<B: Body>(&self, req: Request<B>) -> Result<Response<IncomingBody>> {
+        // We don't use `body::OutputBody` here because we can report I/O
+        // errors from the `copy` directly.
         let (wasi_req, body) = try_into_outgoing(req)?;
         let wasi_body = wasi_req.body().unwrap();
         let body_stream = wasi_body.write().unwrap();

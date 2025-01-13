@@ -1,3 +1,4 @@
+use crate::http::fields::ToWasiHeaderError;
 use std::fmt;
 
 /// The `http` result type.
@@ -78,9 +79,12 @@ impl From<WasiHttpErrorCode> for Error {
     }
 }
 
-impl From<WasiHttpHeaderError> for Error {
-    fn from(e: WasiHttpHeaderError) -> Error {
-        ErrorVariant::WasiHeader(e).into()
+impl From<ToWasiHeaderError> for Error {
+    fn from(error: ToWasiHeaderError) -> Error {
+        Error {
+            variant: ErrorVariant::WasiHeader(error.error),
+            context: vec![error.context],
+        }
     }
 }
 
