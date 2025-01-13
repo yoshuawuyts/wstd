@@ -30,7 +30,7 @@ impl Instant {
     /// Returns the amount of time elapsed from another instant to this one, or zero duration if
     /// that instant is later than this one.
     pub fn duration_since(&self, earlier: Instant) -> Duration {
-        Duration::from_micros(self.0.checked_sub(earlier.0).unwrap_or_default())
+        Duration::from_nanos(self.0.checked_sub(earlier.0).unwrap_or_default())
     }
 
     /// Returns the amount of time elapsed since this instant.
@@ -88,5 +88,18 @@ impl IntoFuture for Instant {
 
     fn into_future(self) -> Self::IntoFuture {
         crate::task::sleep_until(self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_duration_since() {
+        let x = Instant::now();
+        let d = Duration::new(456, 789);
+        let y = x + d;
+        assert_eq!(y.duration_since(x), d);
     }
 }
