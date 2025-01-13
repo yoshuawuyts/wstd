@@ -109,7 +109,7 @@ impl Responder {
         if let Some(len) = body.len() {
             let mut buffer = itoa::Buffer::new();
             wasi_headers
-                .append(&CONTENT_LENGTH.as_str(), &buffer.format(len).as_bytes())
+                .append(CONTENT_LENGTH.as_str(), buffer.format(len).as_bytes())
                 .unwrap();
         }
 
@@ -171,7 +171,7 @@ impl Finished {
         drop(stream);
 
         // If there was an I/O error, panic and don't call `OutgoingBody::finish`.
-        let _ = result.expect("I/O error while writing the body");
+        result.expect("I/O error while writing the body");
 
         let wasi_trailers =
             trailers.map(|trailers| header_map_to_wasi(&trailers).expect("header error"));

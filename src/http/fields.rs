@@ -20,7 +20,7 @@ pub(crate) fn header_map_to_wasi(header_map: &HeaderMap) -> Result<Fields, ToWas
     for (key, value) in header_map {
         // Unwrap because `HeaderMap` has already validated the headers.
         wasi_fields
-            .append(&key.as_str(), &value.as_bytes())
+            .append(key.as_str(), value.as_bytes())
             .map_err(|error| ToWasiHeaderError {
                 error,
                 context: format!("header {key}: {value:?}"),

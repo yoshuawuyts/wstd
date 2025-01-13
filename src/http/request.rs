@@ -42,7 +42,7 @@ pub(crate) fn try_into_outgoing<T>(request: Request<T>) -> Result<(OutgoingReque
     // Set the url path + query string
     if let Some(p_and_q) = parts.uri.path_and_query() {
         wasi_req
-            .set_path_with_query(Some(&p_and_q.as_str()))
+            .set_path_with_query(Some(p_and_q.as_str()))
             .map_err(|()| {
                 Error::other(format!("path and query rejected by wasi-http {p_and_q:?}"))
             })?;
