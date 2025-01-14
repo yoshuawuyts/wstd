@@ -67,20 +67,6 @@ impl SubAssign<Duration> for Instant {
     }
 }
 
-impl std::ops::Deref for Instant {
-    type Target = monotonic_clock::Instant;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for Instant {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 impl IntoFuture for Instant {
     type Output = Instant;
 

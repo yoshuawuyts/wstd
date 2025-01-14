@@ -87,17 +87,17 @@ impl RequestOptions {
     fn to_wasi(&self) -> Result<WasiRequestOptions> {
         let wasi = WasiRequestOptions::new();
         if let Some(timeout) = self.connect_timeout {
-            wasi.set_connect_timeout(Some(*timeout)).map_err(|()| {
+            wasi.set_connect_timeout(Some(timeout.0)).map_err(|()| {
                 Error::other("wasi-http implementation does not support connect timeout option")
             })?;
         }
         if let Some(timeout) = self.first_byte_timeout {
-            wasi.set_first_byte_timeout(Some(*timeout)).map_err(|()| {
+            wasi.set_first_byte_timeout(Some(timeout.0)).map_err(|()| {
                 Error::other("wasi-http implementation does not support first byte timeout option")
             })?;
         }
         if let Some(timeout) = self.between_bytes_timeout {
-            wasi.set_between_bytes_timeout(Some(*timeout))
+            wasi.set_between_bytes_timeout(Some(timeout.0))
                 .map_err(|()| {
                     Error::other(
                         "wasi-http implementation does not support between byte timeout option",

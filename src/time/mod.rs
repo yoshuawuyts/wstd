@@ -61,11 +61,11 @@ impl Timer {
         Timer(None)
     }
     pub fn at(deadline: Instant) -> Timer {
-        let pollable = Reactor::current().schedule(subscribe_instant(*deadline));
+        let pollable = Reactor::current().schedule(subscribe_instant(deadline.0));
         Timer(Some(pollable))
     }
     pub fn after(duration: Duration) -> Timer {
-        let pollable = Reactor::current().schedule(subscribe_duration(*duration));
+        let pollable = Reactor::current().schedule(subscribe_duration(duration.0));
         Timer(Some(pollable))
     }
     pub fn set_after(&mut self, duration: Duration) {

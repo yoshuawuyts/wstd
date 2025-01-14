@@ -107,20 +107,6 @@ impl Duration {
     }
 }
 
-impl std::ops::Deref for Duration {
-    type Target = monotonic_clock::Duration;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for Duration {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
 impl From<std::time::Duration> for Duration {
     fn from(inner: std::time::Duration) -> Self {
         Self(
