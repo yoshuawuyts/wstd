@@ -2,9 +2,10 @@ use super::{Reactor, REACTOR};
 
 use core::future::Future;
 use core::pin::pin;
-use core::ptr;
 use core::task::Waker;
-use core::task::{Context, Poll, RawWaker, RawWakerVTable};
+use core::task::{Context, Poll};
+use std::sync::Arc;
+use std::task::Wake;
 
 /// Start the event loop
 pub fn block_on<Fut>(fut: Fut) -> Fut::Output
@@ -42,18 +43,11 @@ where
 /// Construct a new no-op waker
 // NOTE: we can remove this once <https://github.com/rust-lang/rust/issues/98286> lands
 fn noop_waker() -> Waker {
-    const VTABLE: RawWakerVTable = RawWakerVTable::new(
-        // Cloning just returns a new no-op raw waker
-        |_| RAW,
-        // `wake` does nothing
-        |_| {},
-        // `wake_by_ref` does nothing
-        |_| {},
-        // Dropping does nothing as we don't allocate anything
-        |_| {},
-    );
-    const RAW: RawWaker = RawWaker::new(ptr::null(), &VTABLE);
+    struct NoopWaker;
 
-    // SAFETY: all fields are no-ops, so this is safe
-    unsafe { Waker::from_raw(RAW) }
+    impl Wake for NoopWaker {
+        fn wake(self: Arc<Self>) {}
+    }
+
+    Waker::from(Arc::new(NoopWaker))
 }
