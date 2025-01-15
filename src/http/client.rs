@@ -85,6 +85,7 @@ impl Client {
         let outgoing_body = OutgoingBody::new(AsyncOutputStream::new(wasi_stream), wasi_body);
 
         pin_project! {
+            #[must_use = "futures do nothing unless polled or .awaited"]
             struct IncomingResponseFuture {
                 #[pin]
                 subscription: WaitFor,
