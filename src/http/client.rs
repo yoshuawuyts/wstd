@@ -87,7 +87,7 @@ impl Client {
         pin_project! {
             struct IncomingResponseFuture {
                 #[pin]
-                subscription: Option<WaitFor>,
+                subscription: WaitFor,
                 wasi: WasiFutureIncomingResponse,
             }
         }
@@ -96,7 +96,7 @@ impl Client {
 
             fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
                 let this = self.project();
-                match this.subscription.as_pin_mut().expect("make it so").poll(cx) {
+                match this.subscription.poll(cx) {
                     Poll::Pending => Poll::Pending,
                     Poll::Ready(()) => Poll::Ready(
                         this.wasi
@@ -112,7 +112,7 @@ impl Client {
 
         let subscription = AsyncPollable::new(res.subscribe()).wait_for();
         let future = IncomingResponseFuture {
-            subscription: Some(subscription),
+            subscription,
             wasi: res,
         };
 
