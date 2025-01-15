@@ -107,6 +107,27 @@ impl<T: AsRef<[u8]>> Body for BoundedBody<T> {
     }
 }
 
+/// An HTTP body with an unknown length
+#[derive(Debug)]
+pub struct StreamedBody<S: AsyncRead>(S);
+
+impl<S: AsyncRead> StreamedBody<S> {
+    /// Wrap an `AsyncRead` impl in a type that provides a [`Body`] implementation.
+    pub fn new(s: S) -> Self {
+        Self(s)
+    }
+}
+impl<S: AsyncRead> AsyncRead for StreamedBody<S> {
+    async fn read(&mut self, buf: &mut [u8]) -> crate::io::Result<usize> {
+        self.0.read(buf).await
+    }
+}
+impl<S: AsyncRead> Body for StreamedBody<S> {
+    fn len(&self) -> Option<usize> {
+        None
+    }
+}
+
 impl Body for Empty {
     fn len(&self) -> Option<usize> {
         Some(0)
