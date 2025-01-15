@@ -8,7 +8,7 @@ use super::{
 use crate::io::AsyncInputStream;
 use http::StatusCode;
 
-pub use http::Response;
+pub use http::response::{Builder, Response};
 
 pub(crate) fn try_from_incoming(
     incoming: IncomingResponse,
