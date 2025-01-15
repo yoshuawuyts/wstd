@@ -8,6 +8,7 @@ use crate::http::response::try_from_incoming;
 use crate::io::{self, AsyncOutputStream, AsyncPollable};
 use crate::runtime::WaitFor;
 use crate::time::Duration;
+use pin_project_lite::pin_project;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -83,24 +84,35 @@ impl Client {
 
         let outgoing_body = OutgoingBody::new(AsyncOutputStream::new(wasi_stream), wasi_body);
 
-        struct IncomingResponseFuture {
-            subscription: WaitFor,
-            wasi: WasiFutureIncomingResponse,
+        pin_project! {
+            struct IncomingResponseFuture {
+                #[pin]
+                subscription: Option<WaitFor>,
+                wasi: WasiFutureIncomingResponse,
+            }
         }
         impl Future for IncomingResponseFuture {
             type Output = Result<Response<IncomingBody>>;
 
             fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-                match pin_project(self.subscription).poll(cx) {
+                let this = self.project();
+                match this.subscription.as_pin_mut().expect("make it so").poll(cx) {
                     Poll::Pending => Poll::Pending,
-                    Poll::Ready(response) => Poll::Ready(try_from_incoming(response)),
+                    Poll::Ready(()) => Poll::Ready(
+                        this.wasi
+                            .get()
+                            .unwrap()
+                            .unwrap()
+                            .map_err(Error::from)
+                            .and_then(try_from_incoming),
+                    ),
                 }
             }
         }
 
         let subscription = AsyncPollable::new(res.subscribe()).wait_for();
         let future = IncomingResponseFuture {
-            subscription,
+            subscription: Some(subscription),
             wasi: res,
         };
 

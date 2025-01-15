@@ -114,7 +114,7 @@ async fn main() -> Result<()> {
 
     Client::finish(outgoing_body, Some(trailers))?;
 
-    let response = response.get().await?;
+    let response = response.await?;
 
     // Print the response.
 
