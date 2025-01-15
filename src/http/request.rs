@@ -10,7 +10,7 @@ use crate::io::AsyncInputStream;
 use wasi::http::outgoing_handler::OutgoingRequest;
 use wasi::http::types::IncomingRequest;
 
-pub use http::Request;
+pub use http::request::{Builder, Request};
 
 pub(crate) fn try_into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, T), Error> {
     let wasi_req = OutgoingRequest::new(header_map_to_wasi(request.headers())?);
@@ -54,7 +54,7 @@ pub(crate) fn try_into_outgoing<T>(request: Request<T>) -> Result<(OutgoingReque
 
 /// This is used by the `http_server` macro.
 #[doc(hidden)]
-pub fn try_from_incoming_request(
+pub fn try_from_incoming(
     incoming: IncomingRequest,
 ) -> Result<Request<IncomingBody>, WasiHttpErrorCode> {
     // TODO: What's the right error code to use for invalid headers?

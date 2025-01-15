@@ -138,7 +138,7 @@ pub fn attr_macro_http_server(_attr: TokenStream, item: TokenStream) -> TokenStr
 
                 let responder = ::wstd::http::server::Responder::new(response_out);
                 let _finished: ::wstd::http::server::Finished =
-                    match ::wstd::http::try_from_incoming_request(request)
+                    match ::wstd::http::request::try_from_incoming(request)
                 {
                     Ok(request) => ::wstd::runtime::block_on(async { __run(request, responder).await }),
                     Err(err) => responder.fail(err),

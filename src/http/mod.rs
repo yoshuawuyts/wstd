@@ -9,7 +9,7 @@ pub use client::Client;
 pub use error::{Error, Result};
 pub use fields::{HeaderMap, HeaderName, HeaderValue};
 pub use method::Method;
-pub use request::{try_from_incoming_request, Request};
+pub use request::Request;
 pub use response::Response;
 pub use scheme::{InvalidUri, Scheme};
 
@@ -19,7 +19,7 @@ mod client;
 pub mod error;
 mod fields;
 mod method;
-mod request;
-mod response;
+pub mod request;
+pub mod response;
 mod scheme;
 pub mod server;
