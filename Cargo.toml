@@ -46,6 +46,7 @@ categories = []
 authors = [
     "Yoshua Wuyts <rust@yosh.is>",
     "Pat Hickey <pat@moreproductive.org>",
+    "Dan Gohman <dev@sunfishcode.online>",
 ]
 
 [workspace.dependencies]
