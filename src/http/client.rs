@@ -6,7 +6,11 @@ use super::{
 use crate::http::request::try_into_outgoing;
 use crate::http::response::try_from_incoming;
 use crate::io::{self, AsyncOutputStream, AsyncPollable};
+use crate::runtime::WaitFor;
 use crate::time::Duration;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use wasi::http::types::{
     FutureIncomingResponse as WasiFutureIncomingResponse, OutgoingBody as WasiOutgoingBody,
     RequestOptions as WasiRequestOptions,
@@ -66,7 +70,10 @@ impl Client {
     pub async fn start_request(
         &self,
         req: Request<BodyForthcoming>,
-    ) -> Result<(OutgoingBody, FutureIncomingResponse)> {
+    ) -> Result<(
+        OutgoingBody,
+        impl Future<Output = Result<Response<IncomingBody>>>,
+    )> {
         let (wasi_req, _body_forthcoming) = try_into_outgoing(req)?;
         let wasi_body = wasi_req.body().unwrap();
         let wasi_stream = wasi_body.write().unwrap();
@@ -76,7 +83,28 @@ impl Client {
 
         let outgoing_body = OutgoingBody::new(AsyncOutputStream::new(wasi_stream), wasi_body);
 
-        Ok((outgoing_body, FutureIncomingResponse(res)))
+        struct IncomingResponseFuture {
+            subscription: WaitFor,
+            wasi: WasiFutureIncomingResponse,
+        }
+        impl Future for IncomingResponseFuture {
+            type Output = Result<Response<IncomingBody>>;
+
+            fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+                match pin_project(self.subscription).poll(cx) {
+                    Poll::Pending => Poll::Pending,
+                    Poll::Ready(response) => Poll::Ready(try_from_incoming(response)),
+                }
+            }
+        }
+
+        let subscription = AsyncPollable::new(res.subscribe()).wait_for();
+        let future = IncomingResponseFuture {
+            subscription,
+            wasi: res,
+        };
+
+        Ok((outgoing_body, future))
     }
 
     /// Finish the body, optionally with trailers.
@@ -134,25 +162,6 @@ impl Client {
 
     fn wasi_options(&self) -> Result<Option<WasiRequestOptions>> {
         self.options.as_ref().map(|o| o.to_wasi()).transpose()
-    }
-}
-
-/// Returned from [`Client::start_request`], this represents a handle to a
-/// response which has not arrived yet. Call [`FutureIncomingResponse::get`]
-/// to wait for the response.
-pub struct FutureIncomingResponse(WasiFutureIncomingResponse);
-
-impl FutureIncomingResponse {
-    /// Consume this `FutureIncomingResponse`, wait, and return the `Response`.
-    pub async fn get(self) -> Result<Response<IncomingBody>> {
-        // Wait for the response.
-        AsyncPollable::new(self.0.subscribe()).wait_for().await;
-
-        // NOTE: the first `unwrap` is to ensure readiness, the second `unwrap`
-        // is to trap if we try and get the response more than once. The final
-        // `?` is to raise the actual error if there is one.
-        let res = self.0.get().unwrap().unwrap()?;
-        try_from_incoming(res)
     }
 }
 
