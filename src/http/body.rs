@@ -222,8 +222,17 @@ impl From<InvalidContentLength> for Error {
 }
 
 /// The output stream for the body, implementing [`AsyncWrite`]. Call
-/// [`Responder::start_response`] to obtain one. Once the body is complete,
-/// it must be declared finished, using [`OutgoingBody::finish`].
+/// [`Responder::start_response`] or [`Client::start_request`] to obtain
+/// one. Once the body is complete, it must be declared finished, using
+/// [`Finished::finish`], [`Finished::fail`], [`Client::finish`], or
+/// [`Client::fail`].
+///
+/// [`Responder::start_response`]: crate::http::server::Responder::start_response
+/// [`Client::start_request`]: crate::http::client::Client::start_request
+/// [`Finished::finish`]: crate::http::server::Finished::finish
+/// [`Finished::fail`]: crate::http::server::Finished::fail
+/// [`Client::finish`]: crate::http::client::Client::finish
+/// [`Client::fail`]: crate::http::client::Client::fail
 #[must_use]
 pub struct OutgoingBody {
     // IMPORTANT: the order of these fields here matters. `stream` must
@@ -295,4 +304,8 @@ impl Drop for DontDropOutgoingBody {
 ///
 /// To instead start the response and obtain the output stream for the body,
 /// use [`Responder::respond`].
+///
+/// [`Response`]: crate::http::Response
+/// [`Responder::start_response`]: crate::http::server::Responder::start_response
+/// [`Responder::respond`]: crate::http::server::Responder::respond
 pub struct BodyForthcoming;

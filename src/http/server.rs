@@ -147,7 +147,7 @@ impl Responder {
 }
 
 /// An opaque value returned from a handler indicating that the body is
-/// finished, either by [`OutgoingBody::finish`] or [`OutgoingBody::fail`].
+/// finished, either by [`Finished::finish`] or [`Finished::fail`].
 pub struct Finished(pub(crate) ());
 
 impl Finished {

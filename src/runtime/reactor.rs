@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use wasi::io::poll::Pollable;
 
-/// A key for a Pollable, which is an index into the Slab<Pollable> in Reactor.
+/// A key for a `Pollable`, which is an index into the `Slab<Pollable>` in `Reactor`.
 #[repr(transparent)]
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub(crate) struct EventKey(pub(crate) usize);
