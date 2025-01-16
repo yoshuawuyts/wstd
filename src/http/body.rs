@@ -297,15 +297,21 @@ impl Drop for DontDropOutgoingBody {
     }
 }
 
-/// A placeholder for use as the type parameter to [`Response`] to indicate
-/// that the body has not yet started. This is used with
-/// [`Responder::start_response`], which has a `Response<BodyForthcoming>`
-/// argument.
+/// A placeholder for use as the type parameter to [`Request`] and [`Response`]
+/// to indicate that the body has not yet started. This is used with
+/// [`Client::start_request`] and [`Responder::start_response`], which have
+/// `Requeset<BodyForthcoming>` and `Response<BodyForthcoming>` arguments,
+/// respectively.
 ///
 /// To instead start the response and obtain the output stream for the body,
 /// use [`Responder::respond`].
+/// To instead send a request or response with an input stream for the body,
+/// use [`Client::send`] or [`Responder::respond`].
 ///
+/// [`Request`]: crate::http::Request
 /// [`Response`]: crate::http::Response
+/// [`Client::start_request`]: crate::http::Client::start_request
 /// [`Responder::start_response`]: crate::http::server::Responder::start_response
+/// [`Client::send`]: crate::http::Client::send
 /// [`Responder::respond`]: crate::http::server::Responder::respond
 pub struct BodyForthcoming;
