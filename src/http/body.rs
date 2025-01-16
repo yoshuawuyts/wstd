@@ -222,8 +222,17 @@ impl From<InvalidContentLength> for Error {
 }
 
 /// The output stream for the body, implementing [`AsyncWrite`]. Call
-/// [`Responder::start_response`] to obtain one. Once the body is complete,
-/// it must be declared finished, using [`OutgoingBody::finish`].
+/// [`Responder::start_response`] or [`Client::start_request`] to obtain
+/// one. Once the body is complete, it must be declared finished, using
+/// [`Finished::finish`], [`Finished::fail`], [`Client::finish`], or
+/// [`Client::fail`].
+///
+/// [`Responder::start_response`]: crate::http::server::Responder::start_response
+/// [`Client::start_request`]: crate::http::client::Client::start_request
+/// [`Finished::finish`]: crate::http::server::Finished::finish
+/// [`Finished::fail`]: crate::http::server::Finished::fail
+/// [`Client::finish`]: crate::http::client::Client::finish
+/// [`Client::fail`]: crate::http::client::Client::fail
 #[must_use]
 pub struct OutgoingBody {
     // IMPORTANT: the order of these fields here matters. `stream` must
@@ -288,11 +297,21 @@ impl Drop for DontDropOutgoingBody {
     }
 }
 
-/// A placeholder for use as the type parameter to [`Response`] to indicate
-/// that the body has not yet started. This is used with
-/// [`Responder::start_response`], which has a `Response<BodyForthcoming>`
-/// argument.
+/// A placeholder for use as the type parameter to [`Request`] and [`Response`]
+/// to indicate that the body has not yet started. This is used with
+/// [`Client::start_request`] and [`Responder::start_response`], which have
+/// `Requeset<BodyForthcoming>` and `Response<BodyForthcoming>` arguments,
+/// respectively.
 ///
 /// To instead start the response and obtain the output stream for the body,
 /// use [`Responder::respond`].
+/// To instead send a request or response with an input stream for the body,
+/// use [`Client::send`] or [`Responder::respond`].
+///
+/// [`Request`]: crate::http::Request
+/// [`Response`]: crate::http::Response
+/// [`Client::start_request`]: crate::http::Client::start_request
+/// [`Responder::start_response`]: crate::http::server::Responder::start_response
+/// [`Client::send`]: crate::http::Client::send
+/// [`Responder::respond`]: crate::http::server::Responder::respond
 pub struct BodyForthcoming;
