@@ -34,7 +34,7 @@ pub(crate) fn try_into_outgoing<T>(request: Request<T>) -> Result<(OutgoingReque
         .map_err(|()| Error::other(format!("scheme rejected by wasi-http: {scheme:?}")))?;
 
     // Set authority
-    let authority = parts.uri.authority().map(|a| a.as_str());
+    let authority = parts.uri.authority().map(Authority::as_str);
     wasi_req
         .set_authority(authority)
         .map_err(|()| Error::other(format!("authority rejected by wasi-http {authority:?}")))?;

@@ -9,6 +9,7 @@ edition.workspace = true
 authors.workspace = true
 keywords.workspace = true
 categories.workspace = true
+repository.workspace = true
 
 [features]
 
@@ -42,7 +43,7 @@ edition = "2021"
 license = "MIT OR Apache-2.0 OR Apache-2.0 WITH LLVM-exception"
 repository = "https://github.com/yoshuawuyts/wstd"
 keywords = ["WebAssembly", "async", "stdlib", "Components"]
-categories = []
+categories = ["wasm", "asynchronous"]
 authors = [
     "Yoshua Wuyts <rust@yosh.is>",
     "Pat Hickey <pat@moreproductive.org>",

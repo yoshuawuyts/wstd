@@ -1,5 +1,5 @@
 use super::{AsyncPollable, AsyncRead, AsyncWrite};
-use std::cell::RefCell;
+use std::cell::OnceCell;
 use std::io::Result;
 use wasi::io::streams::{InputStream, OutputStream, StreamError};
 
@@ -7,30 +7,24 @@ use wasi::io::streams::{InputStream, OutputStream, StreamError};
 pub struct AsyncInputStream {
     // Lazily initialized pollable, used for lifetime of stream to check readiness.
     // Field ordering matters: this child must be dropped before stream
-    subscription: RefCell<Option<AsyncPollable>>,
+    subscription: OnceCell<AsyncPollable>,
     stream: InputStream,
 }
 
 impl AsyncInputStream {
     pub fn new(stream: InputStream) -> Self {
         Self {
-            subscription: RefCell::new(None),
+            subscription: OnceCell::new(),
             stream,
         }
     }
     async fn ready(&self) {
         // Lazily initialize the AsyncPollable
-        if self.subscription.borrow().is_none() {
-            self.subscription
-                .replace(Some(AsyncPollable::new(self.stream.subscribe())));
-        }
+        let subscription = self
+            .subscription
+            .get_or_init(|| AsyncPollable::new(self.stream.subscribe()));
         // Wait on readiness
-        self.subscription
-            .borrow()
-            .as_ref()
-            .expect("populated refcell")
-            .wait_for()
-            .await;
+        subscription.wait_for().await;
     }
     /// Like [`AsyncRead::read`], but doesn't require a `&mut self`.
     pub async fn read(&self, buf: &mut [u8]) -> Result<usize> {
@@ -70,30 +64,24 @@ impl AsyncRead for AsyncInputStream {
 pub struct AsyncOutputStream {
     // Lazily initialized pollable, used for lifetime of stream to check readiness.
     // Field ordering matters: this child must be dropped before stream
-    subscription: RefCell<Option<AsyncPollable>>,
+    subscription: OnceCell<AsyncPollable>,
     stream: OutputStream,
 }
 
 impl AsyncOutputStream {
     pub fn new(stream: OutputStream) -> Self {
         Self {
-            subscription: RefCell::new(None),
+            subscription: OnceCell::new(),
             stream,
         }
     }
     async fn ready(&self) {
         // Lazily initialize the AsyncPollable
-        if self.subscription.borrow().is_none() {
-            self.subscription
-                .replace(Some(AsyncPollable::new(self.stream.subscribe())));
-        }
+        let subscription = self
+            .subscription
+            .get_or_init(|| AsyncPollable::new(self.stream.subscribe()));
         // Wait on readiness
-        self.subscription
-            .borrow()
-            .as_ref()
-            .expect("populated refcell")
-            .wait_for()
-            .await;
+        subscription.wait_for().await;
     }
     /// Like [`AsyncWrite::write`], but doesn't require a `&mut self`.
     pub async fn write(&self, buf: &[u8]) -> Result<usize> {

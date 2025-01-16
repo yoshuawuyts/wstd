@@ -118,9 +118,9 @@ impl From<std::time::Duration> for Duration {
     }
 }
 
-impl Into<std::time::Duration> for Duration {
-    fn into(self) -> std::time::Duration {
-        std::time::Duration::from_nanos(self.0)
+impl From<Duration> for std::time::Duration {
+    fn from(duration: Duration) -> Self {
+        Self::from_nanos(duration.0)
     }
 }
 
