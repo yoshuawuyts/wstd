@@ -15,7 +15,7 @@ pub fn stdin() -> Stdin {
     let stream = AsyncInputStream::new(wasi::cli::stdin::get_stdin());
     Stdin {
         stream,
-        terminput: LazyCell::new(|| wasi::cli::terminal_stdin::get_terminal_stdin()),
+        terminput: LazyCell::new(wasi::cli::terminal_stdin::get_terminal_stdin),
     }
 }
 
@@ -55,7 +55,7 @@ pub fn stdout() -> Stdout {
     let stream = AsyncOutputStream::new(wasi::cli::stdout::get_stdout());
     Stdout {
         stream,
-        termoutput: LazyCell::new(|| wasi::cli::terminal_stdout::get_terminal_stdout()),
+        termoutput: LazyCell::new(wasi::cli::terminal_stdout::get_terminal_stdout),
     }
 }
 
@@ -100,7 +100,7 @@ pub fn stderr() -> Stderr {
     let stream = AsyncOutputStream::new(wasi::cli::stderr::get_stderr());
     Stderr {
         stream,
-        termoutput: LazyCell::new(|| wasi::cli::terminal_stderr::get_terminal_stderr()),
+        termoutput: LazyCell::new(wasi::cli::terminal_stderr::get_terminal_stderr),
     }
 }
 

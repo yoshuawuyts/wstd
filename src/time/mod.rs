@@ -72,7 +72,7 @@ impl Timer {
         *self = Self::after(duration);
     }
     pub fn wait(&self) -> Wait {
-        let wait_for = self.0.as_ref().map(|pollable| pollable.wait_for());
+        let wait_for = self.0.as_ref().map(AsyncPollable::wait_for);
         Wait { wait_for }
     }
 }

@@ -174,7 +174,10 @@ impl Client {
     }
 
     fn wasi_options(&self) -> Result<Option<WasiRequestOptions>> {
-        self.options.as_ref().map(|o| o.to_wasi()).transpose()
+        self.options
+            .as_ref()
+            .map(RequestOptions::to_wasi)
+            .transpose()
     }
 }
 
