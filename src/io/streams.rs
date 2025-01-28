@@ -28,19 +28,23 @@ impl AsyncInputStream {
     }
     /// Like [`AsyncRead::read`], but doesn't require a `&mut self`.
     pub async fn read(&self, buf: &mut [u8]) -> Result<usize> {
-        self.ready().await;
-        // Ideally, the ABI would be able to read directly into buf. However, with the default
-        // generated bindings, it returns a newly allocated vec, which we need to copy into buf.
-        let read = match self.stream.read(buf.len() as u64) {
-            // We don't need to special-case 0 here: a value of 0 bytes from
-            // WASI's `read` doesn't mean end-of-stream as it does in Rust,
-            // however since we called `self.ready()`, we'll always get at
-            // least one byte.
-            Ok(r) => r,
-            // 0 bytes from Rust's `read` means end-of-stream.
-            Err(StreamError::Closed) => return Ok(0),
-            Err(StreamError::LastOperationFailed(err)) => {
-                return Err(std::io::Error::other(err.to_debug_string()))
+        let read = loop {
+            self.ready().await;
+            // Ideally, the ABI would be able to read directly into buf.
+            // However, with the default generated bindings, it returns a
+            // newly allocated vec, which we need to copy into buf.
+            match self.stream.read(buf.len() as u64) {
+                // A read of 0 bytes from WASI's `read` doesn't mean
+                // end-of-stream as it does in Rust. However, `self.ready()`
+                // cannot guarantee that at least one byte is ready for
+                // reading, so in this case we try again.
+                Ok(r) if r.is_empty() => continue,
+                Ok(r) => break r,
+                // 0 bytes from Rust's `read` means end-of-stream.
+                Err(StreamError::Closed) => return Ok(0),
+                Err(StreamError::LastOperationFailed(err)) => {
+                    return Err(std::io::Error::other(err.to_debug_string()))
+                }
             }
         };
         let len = read.len();
