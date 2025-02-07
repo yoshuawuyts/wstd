@@ -1,6 +1,7 @@
 //! HTTP networking support
 //!
-pub use http::uri::Uri;
+pub use http::status::StatusCode;
+pub use http::uri::{Authority, PathAndQuery, Uri};
 
 #[doc(inline)]
 pub use body::{Body, IntoBody};
@@ -10,7 +11,7 @@ pub use fields::{HeaderMap, HeaderName, HeaderValue};
 pub use method::Method;
 pub use request::Request;
 pub use response::Response;
-pub use status_code::StatusCode;
+pub use scheme::{InvalidUri, Scheme};
 
 pub mod body;
 
@@ -18,6 +19,7 @@ mod client;
 pub mod error;
 mod fields;
 mod method;
-mod request;
-mod response;
-mod status_code;
+pub mod request;
+pub mod response;
+mod scheme;
+pub mod server;

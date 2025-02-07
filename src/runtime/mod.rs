@@ -2,7 +2,7 @@
 //!
 //! The way to use this is to call [`block_on()`]. Inside the future, [`Reactor::current`]
 //! will give an instance of the [`Reactor`] running the event loop, which can be
-//! to [`Reactor::wait_for`] instances of
+//! to [`AsyncPollable::wait_for`] instances of
 //! [`wasi::Pollable`](https://docs.rs/wasi/latest/wasi/io/poll/struct.Pollable.html).
 //! This will automatically wait for the futures to resolve, and call the
 //! necessary wakers to work.
@@ -11,11 +11,10 @@
 #![warn(missing_docs, unreachable_pub)]
 
 mod block_on;
-mod polling;
 mod reactor;
 
 pub use block_on::block_on;
-pub use reactor::Reactor;
+pub use reactor::{AsyncPollable, Reactor, WaitFor};
 use std::cell::RefCell;
 
 // There are no threads in WASI 0.2, so this is just a safe way to thread a single reactor to all
