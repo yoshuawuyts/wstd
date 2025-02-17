@@ -17,7 +17,7 @@ pub use wasi::http::types::{ErrorCode as WasiHttpErrorCode, HeaderError as WasiH
 impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for c in self.context.iter() {
-            write!(f, "in {c}:\n")?;
+            writeln!(f, "in {c}:")?;
         }
         match &self.variant {
             ErrorVariant::WasiHttp(e) => write!(f, "wasi http error: {e:?}"),

@@ -12,6 +12,50 @@ use wasi::http::types::IncomingRequest;
 
 pub use http::request::{Builder, Request};
 
+#[cfg(feature = "json")]
+use super::{
+    body::{BoundedBody, IntoBody},
+    error::ErrorVariant,
+};
+#[cfg(feature = "json")]
+use http::header::{HeaderValue, CONTENT_TYPE};
+#[cfg(feature = "json")]
+use serde::Serialize;
+#[cfg(feature = "json")]
+use serde_json;
+
+#[cfg(feature = "json")]
+pub trait JsonRequest {
+    fn json<T: Serialize + ?Sized>(self, json: &T) -> Result<Request<BoundedBody<Vec<u8>>>, Error>;
+}
+
+#[cfg(feature = "json")]
+impl JsonRequest for Builder {
+    /// Send a JSON body. Requires optional `json` feature.
+    ///
+    /// Serialization can fail if `T`'s implementation of `Serialize` decides to
+    /// fail.
+    #[cfg(feature = "json")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
+    fn json<T: Serialize + ?Sized>(self, json: &T) -> Result<Request<BoundedBody<Vec<u8>>>, Error> {
+        let encoded = serde_json::to_vec(json).map_err(|e| ErrorVariant::Other(e.to_string()))?;
+        let builder = if !self
+            .headers_ref()
+            .is_some_and(|headers| headers.contains_key(CONTENT_TYPE))
+        {
+            self.header(
+                CONTENT_TYPE,
+                HeaderValue::from_static("application/json; charset=utf-8"),
+            )
+        } else {
+            self
+        };
+        builder
+            .body(encoded.into_body())
+            .map_err(|e| ErrorVariant::Other(e.to_string()).into())
+    }
+}
+
 pub(crate) fn try_into_outgoing<T>(request: Request<T>) -> Result<(OutgoingRequest, T), Error> {
     let wasi_req = OutgoingRequest::new(header_map_to_wasi(request.headers())?);
 
