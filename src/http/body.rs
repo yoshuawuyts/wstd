@@ -4,8 +4,13 @@ use crate::http::fields::header_map_from_wasi;
 use crate::io::{AsyncInputStream, AsyncOutputStream, AsyncRead, AsyncWrite, Cursor, Empty};
 use crate::runtime::AsyncPollable;
 use core::fmt;
-use http::header::{CONTENT_LENGTH, TRANSFER_ENCODING};
+use http::header::CONTENT_LENGTH;
 use wasi::http::types::IncomingBody as WasiIncomingBody;
+
+#[cfg(feature = "json")]
+use serde::de::DeserializeOwned;
+#[cfg(feature = "json")]
+use serde_json;
 
 pub use super::{
     error::{Error, ErrorVariant},
@@ -26,8 +31,6 @@ impl BodyKind {
                 .parse::<u64>()
                 .map_err(|_| InvalidContentLength)?;
             Ok(BodyKind::Fixed(content_length))
-        } else if headers.contains_key(TRANSFER_ENCODING) {
-            Ok(BodyKind::Chunked)
         } else {
             Ok(BodyKind::Chunked)
         }
@@ -175,6 +178,40 @@ impl IncomingBody {
         };
 
         Ok(trailers)
+    }
+
+    /// Try to deserialize the incoming body as JSON. The optional
+    /// `json` feature is required.
+    ///
+    /// Fails whenever the response body is not in JSON format,
+    /// or it cannot be properly deserialized to target type `T`. For more
+    /// details please see [`serde_json::from_reader`].
+    ///
+    /// [`serde_json::from_reader`]: https://docs.serde.rs/serde_json/fn.from_reader.html
+    #[cfg(feature = "json")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
+    pub async fn json<T: DeserializeOwned>(&mut self) -> Result<T, Error> {
+        let buf = self.bytes().await?;
+        serde_json::from_slice(&buf).map_err(|e| ErrorVariant::Other(e.to_string()).into())
+    }
+
+    /// Get the full response body as `Vec<u8>`.
+    pub async fn bytes(&mut self) -> Result<Vec<u8>, Error> {
+        let mut buf = match self.kind {
+            BodyKind::Fixed(l) => {
+                if l > (usize::MAX as u64) {
+                    return Err(ErrorVariant::Other(
+                        "incoming body is too large to allocate and buffer in memory".to_string(),
+                    )
+                    .into());
+                } else {
+                    Vec::with_capacity(l as usize)
+                }
+            }
+            BodyKind::Chunked => Vec::with_capacity(4096),
+        };
+        self.read_to_end(&mut buf).await?;
+        Ok(buf)
     }
 }
 

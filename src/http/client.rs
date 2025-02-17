@@ -24,6 +24,12 @@ pub struct Client {
     options: Option<RequestOptions>,
 }
 
+impl Default for Client {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Client {
     /// Create a new instance of `Client`
     pub fn new() -> Self {

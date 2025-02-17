@@ -20,5 +20,5 @@ use std::cell::RefCell;
 // There are no threads in WASI 0.2, so this is just a safe way to thread a single reactor to all
 // use sites in the background.
 std::thread_local! {
-pub(crate) static REACTOR: RefCell<Option<Reactor>> = RefCell::new(None);
+pub(crate) static REACTOR: RefCell<Option<Reactor>> = const { RefCell::new(None) };
 }

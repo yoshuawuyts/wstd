@@ -12,6 +12,8 @@ categories.workspace = true
 repository.workspace = true
 
 [features]
+default = ["json"]
+json = ["dep:serde", "dep:serde_json"]
 
 [dependencies]
 futures-core.workspace = true
@@ -22,11 +24,16 @@ slab.workspace = true
 wasi.workspace = true
 wstd-macro.workspace = true
 
+# optional
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
 [dev-dependencies]
 anyhow.workspace = true
 clap.workspace = true
 futures-lite.workspace = true
 humantime.workspace = true
+serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
 [workspace]
@@ -62,6 +69,7 @@ http = "1.1"
 itoa = "1"
 pin-project-lite = "0.2.8"
 quote = "1.0"
+serde= "1"
 serde_json = "1"
 slab = "0.4.9"
 syn = "2.0"
