@@ -86,7 +86,6 @@ wstd-macro = { path = "macro", version = "=0.5.3" }
 
 [package.metadata.docs.rs]
 all-features = true
-rustdoc-args = ["--cfg", "docsrs"]
 targets = [
     "wasm32-wasip2"
 ]
