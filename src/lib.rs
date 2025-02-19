@@ -1,3 +1,4 @@
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![allow(async_fn_in_trait)]
 #![warn(future_incompatible, unreachable_pub)]
 #![forbid(unsafe_code)]
