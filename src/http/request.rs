@@ -36,7 +36,6 @@ impl JsonRequest for Builder {
     /// Serialization can fail if `T`'s implementation of `Serialize` decides to
     /// fail.
     #[cfg(feature = "json")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
     fn json<T: Serialize + ?Sized>(self, json: &T) -> Result<Request<BoundedBody<Vec<u8>>>, Error> {
         let encoded = serde_json::to_vec(json).map_err(|e| ErrorVariant::Other(e.to_string()))?;
         let builder = if !self
