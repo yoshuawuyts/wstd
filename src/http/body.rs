@@ -189,7 +189,6 @@ impl IncomingBody {
     ///
     /// [`serde_json::from_reader`]: https://docs.serde.rs/serde_json/fn.from_reader.html
     #[cfg(feature = "json")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
     pub async fn json<T: DeserializeOwned>(&mut self) -> Result<T, Error> {
         let buf = self.bytes().await?;
         serde_json::from_slice(&buf).map_err(|e| ErrorVariant::Other(e.to_string()).into())
