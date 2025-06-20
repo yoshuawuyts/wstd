@@ -4,6 +4,7 @@ use core::future::Future;
 use core::pin::pin;
 use core::task::Waker;
 use core::task::{Context, Poll};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::task::Wake;
 
@@ -24,7 +25,8 @@ where
     let mut fut = pin!(fut);
 
     // Create a new context to be passed to the future.
-    let waker = noop_waker();
+    let waker_impl = Arc::new(ReactorWaker::new());
+    let waker = Waker::from(Arc::clone(&waker_impl));
     let mut cx = Context::from_waker(&waker);
 
     // Either the future completes and we return, or some IO is happening
@@ -32,7 +34,10 @@ where
     let res = loop {
         match fut.as_mut().poll(&mut cx) {
             Poll::Ready(res) => break res,
-            Poll::Pending => reactor.block_until(),
+            Poll::Pending => {
+                reactor.block_until(waker_impl.awake());
+                waker_impl.set_awake(false);
+            }
         }
     };
     // Clear the singleton
@@ -40,14 +45,30 @@ where
     res
 }
 
-/// Construct a new no-op waker
-// NOTE: we can remove this once <https://github.com/rust-lang/rust/issues/98286> lands
-fn noop_waker() -> Waker {
-    struct NoopWaker;
+struct ReactorWaker {
+    awake: AtomicBool,
+}
 
-    impl Wake for NoopWaker {
-        fn wake(self: Arc<Self>) {}
+impl ReactorWaker {
+    fn new() -> Self {
+        Self {
+            awake: AtomicBool::new(false),
+        }
     }
 
-    Waker::from(Arc::new(NoopWaker))
+    #[inline]
+    fn set_awake(&self, awake: bool) {
+        self.awake.store(awake, Ordering::Relaxed);
+    }
+
+    #[inline]
+    fn awake(&self) -> bool {
+        self.awake.load(Ordering::Relaxed)
+    }
+}
+
+impl Wake for ReactorWaker {
+    fn wake(self: Arc<Self>) {
+        self.set_awake(true);
+    }
 }
