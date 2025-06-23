@@ -126,19 +126,8 @@ impl Reactor {
         }
     }
 
-    /// Block until new events are ready. Calls the respective wakers once done.
-    ///
-    /// # On Wakers and single-threaded runtimes
-    ///
-    /// At first glance it might seem silly that this goes through the motions
-    /// of calling the wakers. The main waker we create here is a `noop` waker:
-    /// it does nothing. However, it is common and encouraged to use wakers to
-    /// distinguish between events. Concurrency primitives may construct their
-    /// own wakers to keep track of identity and wake more precisely. We do not
-    /// control the wakers construted by other libraries, and it is for this
-    /// reason that we have to call all the wakers - even if by default they
-    /// will do nothing.
-    pub(crate) fn block_until(&self) {
+    /// Block until at least one pending pollable is ready, waking a pending future.
+    pub(crate) fn block_on_pollables(&self) {
         let reactor = self.inner.borrow();
 
         // We're about to wait for a number of pollables. When they wake we get
