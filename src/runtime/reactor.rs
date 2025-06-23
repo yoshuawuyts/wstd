@@ -281,4 +281,52 @@ mod test {
             .await;
         })
     }
+
+    #[test]
+    fn progresses_wasi_independent_futures() {
+        crate::runtime::block_on(async {
+            let start = wasi::clocks::monotonic_clock::now();
+
+            let reactor = Reactor::current();
+            const LONG_DURATION: u64 = 1_000_000_000;
+            let later = wasi::clocks::monotonic_clock::subscribe_duration(LONG_DURATION);
+            let later = reactor.schedule(later);
+            let mut polled_before = false;
+            let wasi_independent_future = futures_lite::future::poll_fn(|cx| {
+                if polled_before {
+                    std::task::Poll::Ready(true)
+                } else {
+                    polled_before = true;
+                    cx.waker().wake_by_ref();
+                    std::task::Poll::Pending
+                }
+            });
+            let later = async {
+                later.wait_for().await;
+                false
+            };
+            let wasi_independent_future_won =
+                futures_lite::future::race(wasi_independent_future, later).await;
+            assert!(
+                wasi_independent_future_won,
+                "wasi_independent_future should win the race"
+            );
+            const SHORT_DURATION: u64 = LONG_DURATION / 100;
+            let soon = wasi::clocks::monotonic_clock::subscribe_duration(SHORT_DURATION);
+            let soon = reactor.schedule(soon);
+            soon.wait_for().await;
+
+            let end = wasi::clocks::monotonic_clock::now();
+
+            let duration = end - start;
+            assert!(
+                duration > SHORT_DURATION,
+                "{duration} greater than short duration shows awaited for `soon` properly"
+            );
+            assert!(
+                duration < (2 * SHORT_DURATION),
+                "{duration} less than double short duration {SHORT_DURATION} shows did not await for `later`"
+            );
+        })
+    }
 }
