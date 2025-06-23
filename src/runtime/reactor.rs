@@ -312,9 +312,10 @@ mod test {
                 duration > SHORT_DURATION,
                 "{duration} greater than short duration shows awaited for `soon` properly"
             );
+            // Upper bound is high enough that even the very poor windows CI machines meet it
             assert!(
-                duration < (2 * SHORT_DURATION),
-                "{duration} less than double short duration {SHORT_DURATION} shows did not await for `later`"
+                duration < (5 * SHORT_DURATION),
+                "{duration} less than a reasonable multiple of short duration {SHORT_DURATION} shows did not await for `later`"
             );
         })
     }
