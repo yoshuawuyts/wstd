@@ -42,13 +42,13 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: -p wstd --target wasm32-wasip2
+        args: -p wstd --target wasm32-wasip2 -- --nocapture
 
     - name: example tests
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: -p test-programs-artifacts
+        args: -p test-programs-artifacts -- --nocapture
 
 
   check_fmt_and_docs:

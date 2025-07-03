@@ -1,11 +1,10 @@
 use super::{Reactor, REACTOR};
 
-use core::future::Future;
-use core::pin::pin;
-use core::task::Waker;
-use core::task::{Context, Poll};
+use std::future::Future;
+use std::pin::pin;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::task::Wake;
+use std::task::{Context, Poll, Wake, Waker};
 
 /// Start the event loop
 pub fn block_on<Fut>(fut: Fut) -> Fut::Output
@@ -24,7 +23,8 @@ where
     let mut fut = pin!(fut);
 
     // Create a new context to be passed to the future.
-    let waker = noop_waker();
+    let root = Arc::new(RootWaker::new());
+    let waker = Waker::from(root.clone());
     let mut cx = Context::from_waker(&waker);
 
     // Either the future completes and we return, or some IO is happening
@@ -32,7 +32,16 @@ where
     let res = loop {
         match fut.as_mut().poll(&mut cx) {
             Poll::Ready(res) => break res,
-            Poll::Pending => reactor.block_until(),
+            Poll::Pending => {
+                // If some non-pollable based future has marked the root task
+                // as awake, reset and poll again. otherwise, block until a
+                // pollable wakes a future.
+                if root.is_awake() {
+                    root.reset()
+                } else {
+                    reactor.block_on_pollables()
+                }
+            }
         }
     };
     // Clear the singleton
@@ -40,14 +49,28 @@ where
     res
 }
 
-/// Construct a new no-op waker
-// NOTE: we can remove this once <https://github.com/rust-lang/rust/issues/98286> lands
-fn noop_waker() -> Waker {
-    struct NoopWaker;
-
-    impl Wake for NoopWaker {
-        fn wake(self: Arc<Self>) {}
+/// This waker is used in the Context of block_on. If a Future executing in
+/// the block_on calls context.wake(), it sets this boolean state so that
+/// block_on's Future is polled again immediately, rather than waiting for
+/// an external (WASI pollable) event before polling again.
+struct RootWaker {
+    wake: AtomicBool,
+}
+impl RootWaker {
+    fn new() -> Self {
+        Self {
+            wake: AtomicBool::new(false),
+        }
     }
-
-    Waker::from(Arc::new(NoopWaker))
+    fn is_awake(&self) -> bool {
+        self.wake.load(Ordering::Relaxed)
+    }
+    fn reset(&self) {
+        self.wake.store(false, Ordering::Relaxed);
+    }
+}
+impl Wake for RootWaker {
+    fn wake(self: Arc<Self>) {
+        self.wake.store(true, Ordering::Relaxed);
+    }
 }
