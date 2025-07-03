@@ -281,6 +281,8 @@ mod test {
             let later = wasi::clocks::monotonic_clock::subscribe_duration(LONG_DURATION);
             let later = reactor.schedule(later);
             let mut polled_before = false;
+            // This is basically futures_lite::future::yield_now, except with a boolean
+            // `polled_before` so we can definitively observe what happened
             let wasi_independent_future = futures_lite::future::poll_fn(|cx| {
                 if polled_before {
                     std::task::Poll::Ready(true)

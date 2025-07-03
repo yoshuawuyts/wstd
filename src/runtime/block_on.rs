@@ -49,6 +49,10 @@ where
     res
 }
 
+/// This waker is used in the Context of block_on. If a Future executing in
+/// the block_on calls context.wake(), it sets this boolean state so that
+/// block_on's Future is polled again immediately, rather than waiting for
+/// an external (WASI pollable) event before polling again.
 struct RootWaker {
     wake: AtomicBool,
 }
