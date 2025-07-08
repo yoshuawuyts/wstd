@@ -5,6 +5,8 @@
   </strong>
 </div>
 
+  <strong>A <a href="https://bytecodealliance.org/">Bytecode Alliance</a> project</strong>
+
 <br />
 
 <div align="center">
