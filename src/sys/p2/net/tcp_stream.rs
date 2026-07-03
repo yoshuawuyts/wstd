@@ -1,5 +1,4 @@
-use std::io::ErrorKind;
-use std::net::{SocketAddr, ToSocketAddrs};
+use std::net::SocketAddr;
 use wasip2::sockets::instance_network::instance_network;
 use wasip2::sockets::network::Ipv4SocketAddress;
 use wasip2::sockets::tcp::{IpAddressFamily, IpSocketAddress};
@@ -27,29 +26,6 @@ impl TcpStream {
             output: AsyncOutputStream::new(output),
             socket,
         }
-    }
-
-    /// Opens a TCP connection to a remote host.
-    ///
-    /// `addr` is an address of the remote host. Anything which implements the
-    /// [`ToSocketAddrs`] trait can be supplied as the address.  If `addr`
-    /// yields multiple addresses, connect will be attempted with each of the
-    /// addresses until a connection is successful. If none of the addresses
-    /// result in a successful connection, the error returned from the last
-    /// connection attempt (the last address) is returned.
-    pub async fn connect(addr: impl ToSocketAddrs) -> io::Result<Self> {
-        let addrs = addr.to_socket_addrs()?;
-        let mut last_err = None;
-        for addr in addrs {
-            match TcpStream::connect_addr(addr).await {
-                Ok(stream) => return Ok(stream),
-                Err(e) => last_err = Some(e),
-            }
-        }
-
-        Err(last_err.unwrap_or_else(|| {
-            io::Error::new(ErrorKind::InvalidInput, "could not resolve to any address")
-        }))
     }
 
     /// Establishes a connection to the specified `addr`.
