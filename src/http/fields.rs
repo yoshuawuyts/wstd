@@ -18,10 +18,25 @@ pub(crate) fn header_map_from_wasi(wasi_fields: Fields) -> Result<HeaderMap, Err
 pub(crate) fn header_map_to_wasi(header_map: &HeaderMap) -> Result<Fields, Error> {
     let wasi_fields = Fields::new();
     for (key, value) in header_map {
-        // Unwrap because `HeaderMap` has already validated the headers.
-        wasi_fields
-            .append(key.as_str(), value.as_bytes())
-            .with_context(|| format!("wasi rejected header `{key}: {value:?}`"))?
+        if !FORBIDDEN_HEADERS.contains(key) {
+            wasi_fields
+                .append(key.as_str(), value.as_bytes())
+                .with_context(|| format!("wasi rejected header `{key}: {value:?}`"))?
+        }
     }
     Ok(wasi_fields)
 }
+
+const FORBIDDEN_HEADERS: [HeaderName; 11] = [
+    http::header::CONNECTION,
+    HeaderName::from_static("keep-alive"),
+    http::header::PROXY_AUTHENTICATE,
+    http::header::PROXY_AUTHORIZATION,
+    HeaderName::from_static("proxy-connection"),
+    http::header::TRANSFER_ENCODING,
+    http::header::UPGRADE,
+    http::header::HOST,
+    HeaderName::from_static("http2-settings"),
+    http::header::EXPECT,
+    http::header::CONTENT_LENGTH,
+];
