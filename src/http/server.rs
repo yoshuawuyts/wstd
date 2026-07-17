@@ -19,7 +19,6 @@
 //! [`http_server`]: crate::http_server
 
 use super::{Body, Error, Response, error::ErrorCode, fields::header_map_to_wasi};
-use http::header::CONTENT_LENGTH;
 use wasip2::exports::http::incoming_handler::ResponseOutparam;
 use wasip2::http::types::OutgoingResponse;
 
@@ -43,14 +42,6 @@ impl Responder {
 
         // Consume the `response` and prepare to write the body.
         let body = response.into_body().into();
-
-        // Automatically add a Content-Length header.
-        if let Some(len) = body.content_length() {
-            let mut buffer = itoa::Buffer::new();
-            wasi_headers
-                .append(CONTENT_LENGTH.as_str(), buffer.format(len).as_bytes())
-                .unwrap();
-        }
 
         let wasi_response = OutgoingResponse::new(wasi_headers);
 
