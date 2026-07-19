@@ -1,13 +1,16 @@
-use cfg_aliases::cfg_aliases;
+use std::env;
 
 fn main() {
-    cfg_aliases! {
-        // True when targeting a wasip3 component, either via the explicit
-        // `wasip3` feature or the `wasm32-wasip3` target (`target_env = "p3"`).
-        wstd_p3: { any(feature = "wasip3", target_env = "p3") },
-        // True when targeting a wasip2 component, either via the `wasip2`
-        // feature (default) or the `wasm32-wasip2` target. wasip3 takes
-        // precedence when both apply.
-        wstd_p2: { all(any(feature = "wasip2", target_env = "p2"), not(wstd_p3)) },
+    println!("cargo::rustc-check-cfg=cfg(wstd_p2)");
+    println!("cargo::rustc-check-cfg=cfg(wstd_p3)");
+
+    let target_env = env::var("CARGO_CFG_TARGET_ENV").unwrap_or_default();
+    let wasip3 = env::var_os("CARGO_FEATURE_WASIP3").is_some() || target_env == "p3";
+    let wasip2 = (env::var_os("CARGO_FEATURE_WASIP2").is_some() || target_env == "p2") && !wasip3;
+
+    if wasip3 {
+        println!("cargo::rustc-cfg=wstd_p3");
+    } else if wasip2 {
+        println!("cargo::rustc-cfg=wstd_p2");
     }
 }

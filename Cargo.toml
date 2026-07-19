@@ -18,9 +18,6 @@ json = ["dep:serde", "dep:serde_json"]
 wasip2 = ["dep:wasip2"]
 wasip3 = ["dep:wasip3", "dep:wit-bindgen"]
 
-[build-dependencies]
-cfg_aliases = "0.2"
-
 [dependencies]
 anyhow.workspace = true
 async-task.workspace = true

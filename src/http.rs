@@ -72,7 +72,7 @@ pub mod server {
 //
 // The `#[wstd::http_server]` proc macro delegates to this declarative macro.
 // Because `#[macro_export]` macros are compiled in wstd's context, the
-// `wstd_p2` / `wstd_p3` cfg aliases (defined in build.rs) are evaluated against
+// The `wstd_p2` / `wstd_p3` cfgs (set in build.rs) are evaluated against
 // wstd's own features and target environment. Consumers don't need to define
 // any features themselves.
 

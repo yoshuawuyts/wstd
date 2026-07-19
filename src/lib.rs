@@ -92,7 +92,7 @@ pub mod __internal {
 // Conditionally-compiled declarative macro for the `#[wstd::main]` entry point.
 //
 // The `#[wstd::main]` proc macro delegates to this declarative macro so the
-// `wstd_p2` / `wstd_p3` cfg aliases (defined in build.rs) are evaluated in
+// The `wstd_p2` / `wstd_p3` cfgs (set in build.rs) are evaluated in
 // wstd's own context. Consumers don't need to define any features themselves.
 //
 // p2: the standard bin `fn main` is lifted to a synchronous `wasi:cli/run` by
