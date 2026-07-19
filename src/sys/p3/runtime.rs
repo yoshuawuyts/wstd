@@ -1,8 +1,6 @@
 use async_task::{Runnable, Task as AsyncTask};
 use core::future::Future;
 use std::cell::RefCell;
-use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
 
 // There are no threads in WASI, so this is just a safe way to thread a single reactor to all
 // use sites in the background.
@@ -19,7 +17,9 @@ where
     F: Future + 'static,
     F::Output: 'static,
 {
-    // Set up the reactor for spawn support
+    // Guard against nested `block_on`. Spawn support itself is provided by
+    // wit-bindgen's executor, not this reactor, so the stored value is only
+    // used to detect re-entrancy.
     let reactor = Reactor::new();
     let prev = REACTOR.replace(Some(reactor));
     if prev.is_some() {
@@ -70,53 +70,54 @@ impl<E: core::fmt::Debug> __MainReturn for Result<(), E> {
     }
 }
 
-/// Manage async task scheduling for WASI 0.3
+/// Marker for the currently running `wstd` async runtime.
+///
+/// On p3, task scheduling is handled by wit-bindgen's component-model async
+/// executor, so the reactor carries no state of its own. It remains a distinct
+/// type so the target-agnostic facade in `src/runtime.rs` (shared with p2) can
+/// call `Reactor::current().spawn(..)` uniformly across backends.
 #[derive(Debug, Clone)]
 pub struct Reactor {
-    inner: Arc<InnerReactor>,
-}
-
-#[derive(Debug)]
-struct InnerReactor {
-    ready_list: Mutex<VecDeque<Runnable>>,
+    _private: (),
 }
 
 impl Reactor {
-    /// Return a `Reactor` for the currently running `wstd::runtime::block_on`.
+    /// Return a `Reactor` for the currently running `wstd` async runtime.
     ///
-    /// # Panic
-    /// This will panic if called outside of `wstd::runtime::block_on`.
+    /// On p3, task scheduling is delegated to wit-bindgen's component-model
+    /// async executor, which is live throughout any async component task —
+    /// both [`block_on`] and the async-lifted `#[wstd::main]` export. The
+    /// reactor holds no state, so this always succeeds.
     pub fn current() -> Self {
-        REACTOR.with(|r| {
-            r.borrow()
-                .as_ref()
-                .expect("Reactor::current must be called within a wstd runtime")
-                .clone()
-        })
+        Self::new()
     }
 
     /// Create a new instance of `Reactor`
     pub(crate) fn new() -> Self {
-        Self {
-            inner: Arc::new(InnerReactor {
-                ready_list: Mutex::new(VecDeque::new()),
-            }),
-        }
+        Self { _private: () }
     }
 
     /// Spawn a `Task` on the `Reactor`.
+    ///
+    /// Each runnable is driven on wit-bindgen's component-model async executor
+    /// (the same one [`block_on`] runs on), so the spawned future is polled to
+    /// completion concurrently with the task that spawned it. Every time the
+    /// task is woken, `schedule` runs again and re-submits the runnable.
     pub fn spawn<F, T>(&self, fut: F) -> AsyncTask<T>
     where
         F: Future<Output = T> + 'static,
         T: 'static,
     {
-        let this = self.clone();
-        let schedule = move |runnable| this.inner.ready_list.lock().unwrap().push_back(runnable);
+        let schedule = move |runnable: Runnable| {
+            wasip3::wit_bindgen::rt::async_support::spawn(async move {
+                runnable.run();
+            });
+        };
 
         // Safety: 'static constraints satisfy the lifetime requirements
         #[allow(unsafe_code)]
         let (runnable, task) = unsafe { async_task::spawn_unchecked(fut, schedule) };
-        self.inner.ready_list.lock().unwrap().push_back(runnable);
+        runnable.schedule();
         task
     }
 }
