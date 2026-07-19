@@ -3,6 +3,10 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use wasip3::wit_bindgen::rt::async_support::{StreamReader, StreamResult, StreamWriter};
 
+mod stdio;
+
+pub use stdio::*;
+
 /// A wrapper for a p3 `StreamReader<u8>` that provides `AsyncRead`.
 pub struct AsyncInputStream {
     reader: StreamReader<u8>,

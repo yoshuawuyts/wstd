@@ -93,11 +93,12 @@ impl TcpStream {
     }
 
     /// Returns the socket address of the remote peer of this TCP connection.
-    pub fn peer_addr(&self) -> io::Result<SocketAddr> {
+    pub fn peer_addr(&self) -> io::Result<String> {
         self.socket
             .get_remote_address()
             .map_err(to_io_err)
             .map(sockaddr_from_wasi)
+            .map(|addr| addr.to_string())
     }
 
     pub fn split(&self) -> (ReadHalf<'_>, WriteHalf<'_>) {

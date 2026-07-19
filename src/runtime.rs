@@ -9,7 +9,12 @@
 
 pub use ::async_task::Task;
 
-pub use crate::sys::runtime::{AsyncPollable, Reactor, WaitFor, block_on};
+#[cfg(wstd_p3)]
+#[doc(hidden)]
+pub use crate::sys::runtime::{__MainReturn, __finish_main};
+#[cfg(wstd_p2)]
+pub use crate::sys::runtime::{AsyncPollable, WaitFor};
+pub use crate::sys::runtime::{Reactor, block_on};
 
 /// Spawn a `Future` as a `Task` on the current `Reactor`.
 ///

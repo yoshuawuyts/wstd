@@ -1,5 +1,3 @@
-pub use ::async_task::Task;
-
 use async_task::{Runnable, Task as AsyncTask};
 use core::future::Future;
 use std::cell::RefCell;
@@ -70,17 +68,6 @@ impl<E: core::fmt::Debug> __MainReturn for Result<(), E> {
             }
         }
     }
-}
-
-/// Spawn a `Future` as a `Task` on the current `Reactor`.
-///
-/// Panics if called from outside `block_on`.
-pub fn spawn<F, T>(fut: F) -> Task<T>
-where
-    F: std::future::Future<Output = T> + 'static,
-    T: 'static,
-{
-    Reactor::current().spawn(fut)
 }
 
 /// Manage async task scheduling for WASI 0.3
