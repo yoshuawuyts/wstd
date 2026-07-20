@@ -18,7 +18,12 @@ pub(crate) fn header_map_from_wasi(wasi_fields: Fields) -> Result<HeaderMap, Err
 pub(crate) fn header_map_to_wasi(header_map: &HeaderMap) -> Result<Fields, Error> {
     let wasi_fields = Fields::new();
     for (key, value) in header_map {
-        if !FORBIDDEN_HEADERS.contains(key) {
+        let key = key.as_str().to_ascii_lowercase();
+        if FORBIDDEN_HEADERS
+            .iter()
+            .find(|k| k.as_str() == key)
+            .is_none()
+        {
             wasi_fields
                 .append(key.as_str(), value.as_bytes())
                 .with_context(|| format!("wasi rejected header `{key}: {value:?}`"))?
@@ -27,6 +32,7 @@ pub(crate) fn header_map_to_wasi(header_map: &HeaderMap) -> Result<Fields, Error
     Ok(wasi_fields)
 }
 
+// Optimization opportunity: use a trie here
 const FORBIDDEN_HEADERS: [HeaderName; 11] = [
     http::header::CONNECTION,
     HeaderName::from_static("keep-alive"),
