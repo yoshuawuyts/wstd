@@ -2,7 +2,6 @@ use wstd::future::FutureExt;
 use wstd::http::{Body, Client, Request};
 use wstd::time::Duration;
 
-#[wstd::test]
 async fn http_timeout() -> Result<(), Box<dyn std::error::Error>> {
     // This get request will connect to the server, which will then wait 1 second before
     // returning a response.
@@ -20,4 +19,8 @@ async fn http_timeout() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     Ok(())
+}
+
+wstd::test_main! {
+    http_timeout,
 }

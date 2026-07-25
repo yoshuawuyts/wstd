@@ -89,6 +89,52 @@ pub mod __internal {
     pub use wasip2;
 }
 
+/// Test-harness support used by the [`test_main!`](crate::test_main) macro.
+///
+/// This is `#[doc(hidden)]` and not part of the public API.
+#[doc(hidden)]
+pub mod __test {
+    /// Conversion from a test function's return type into a pass/fail result.
+    ///
+    /// Implemented for `()` and `Result<(), E: Debug>`, matching the return
+    /// types permitted on the `async fn` tests collected by [`test_main!`].
+    ///
+    /// [`test_main!`]: crate::test_main
+    pub trait TestOutcome {
+        /// Convert the outcome into `Ok(())` on success or an `Err` carrying a
+        /// rendered failure message.
+        fn into_test_result(self) -> Result<(), String>;
+    }
+
+    impl TestOutcome for () {
+        fn into_test_result(self) -> Result<(), String> {
+            Ok(())
+        }
+    }
+
+    impl<E: core::fmt::Debug> TestOutcome for Result<(), E> {
+        fn into_test_result(self) -> Result<(), String> {
+            self.map_err(|err| format!("{err:?}"))
+        }
+    }
+
+    /// Report one test's outcome with a libtest-style status line, returning
+    /// `true` when the test passed.
+    pub fn report(name: &str, outcome: impl TestOutcome) -> bool {
+        match outcome.into_test_result() {
+            Ok(()) => {
+                println!("test {name} ... ok");
+                true
+            }
+            Err(err) => {
+                println!("test {name} ... FAILED");
+                eprintln!("---- {name} ----\n{err}\n");
+                false
+            }
+        }
+    }
+}
+
 // Conditionally-compiled declarative macro for the `#[wstd::main]` entry point.
 //
 // The `#[wstd::main]` proc macro delegates to this declarative macro so the
@@ -133,6 +179,88 @@ macro_rules! __main_export {
             }
 
             $crate::__internal::wasip3::cli::command::export!(__WstdMain with_types_in $crate::__internal::wasip3);
+        };
+
+        // The bin target still requires a `fn main`; the real entry point is the
+        // async-lifted `wasi:cli/run` export above, so this is never invoked.
+        fn main() {}
+    };
+}
+
+/// Define the entry point of an integration-test binary composed of `async fn`
+/// tests.
+///
+/// On p3 a test cannot use the standard libtest harness: libtest lifts its
+/// `main` as a *synchronous* `wasi:cli/run` task, and a synchronous task may
+/// not block on async-lowered imports (it traps with "cannot block a
+/// synchronous task before returning"). Instead, set `harness = false` for the
+/// test target and use this macro, which async-lifts `wasi:cli/run` on p3 and
+/// generates a plain `fn main` on p2. Each listed `async fn` test is driven to
+/// completion with [`block_on`](crate::runtime::block_on):
+///
+/// ```ignore
+/// async fn my_test() -> Result<(), Box<dyn std::error::Error>> {
+///     Ok(())
+/// }
+///
+/// wstd::test_main! { my_test }
+/// ```
+///
+/// Tests may return `()` or `Result<(), E>` where `E: Debug`. The process exits
+/// non-zero if any test returns an error, so `cargo test` reports the failure.
+#[macro_export]
+macro_rules! test_main {
+    ( $( $test:path ),* $(,)? ) => {
+        $crate::__test_main_export! { $( $test ),* }
+    };
+}
+
+#[cfg(wstd_p2)]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __test_main_export {
+    ( $( $test:path ),* $(,)? ) => {
+        fn main() {
+            let mut all_ok = true;
+            $(
+                all_ok &= $crate::__test::report(
+                    ::core::stringify!($test),
+                    $crate::runtime::block_on($test()),
+                );
+            )*
+            if !all_ok {
+                ::std::process::exit(1);
+            }
+        }
+    };
+}
+
+#[cfg(wstd_p3)]
+#[macro_export]
+#[doc(hidden)]
+macro_rules! __test_main_export {
+    ( $( $test:path ),* $(,)? ) => {
+        const _: () = {
+            struct __WstdTestMain;
+
+            impl $crate::__internal::wasip3::exports::cli::run::Guest for __WstdTestMain {
+                async fn run() -> ::core::result::Result<(), ()> {
+                    let mut all_ok = true;
+                    $(
+                        all_ok &= $crate::__test::report(
+                            ::core::stringify!($test),
+                            $crate::runtime::block_on($test()),
+                        );
+                    )*
+                    if all_ok {
+                        ::core::result::Result::Ok(())
+                    } else {
+                        ::core::result::Result::Err(())
+                    }
+                }
+            }
+
+            $crate::__internal::wasip3::cli::command::export!(__WstdTestMain with_types_in $crate::__internal::wasip3);
         };
 
         // The bin target still requires a `fn main`; the real entry point is the

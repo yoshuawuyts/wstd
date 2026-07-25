@@ -1,7 +1,6 @@
 use std::error::Error;
 use wstd::time::{Duration, Instant, Timer};
 
-#[wstd::test]
 async fn timer_after() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     Timer::after(Duration::from_millis(50)).wait().await;
@@ -13,7 +12,6 @@ async fn timer_after() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[wstd::test]
 async fn timer_at() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     let deadline = start + Duration::from_millis(50);
@@ -26,10 +24,15 @@ async fn timer_at() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-#[wstd::test]
 async fn instant_monotonic() -> Result<(), Box<dyn Error>> {
     let a = Instant::now();
     let b = Instant::now();
     assert!(b >= a, "monotonic clock should not go backwards");
     Ok(())
+}
+
+wstd::test_main! {
+    timer_after,
+    timer_at,
+    instant_monotonic,
 }

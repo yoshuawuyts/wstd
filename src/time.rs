@@ -424,6 +424,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        wstd_p3,
+        ignore = "block_on traps under libtest's synchronous harness on p3; covered by the integration test suite"
+    )]
     fn timer_now() {
         crate::runtime::block_on(debug_duration("timer_now", async {
             Timer::at(Instant::now()).wait().await
@@ -431,6 +435,10 @@ mod tests {
     }
 
     #[test]
+    #[cfg_attr(
+        wstd_p3,
+        ignore = "block_on traps under libtest's synchronous harness on p3; covered by the integration test suite"
+    )]
     fn timer_after_100_milliseconds() {
         crate::runtime::block_on(debug_duration("timer_after_100_milliseconds", async {
             Timer::after(Duration::from_millis(100)).wait().await

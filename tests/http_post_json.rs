@@ -12,8 +12,7 @@ struct Echo {
     url: String,
 }
 
-#[wstd::test]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn http_post_json() -> Result<(), Box<dyn Error>> {
     let test_data = TestData {
         test: "data".to_string(),
     };
@@ -40,4 +39,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     Ok(())
+}
+
+wstd::test_main! {
+    http_post_json,
 }

@@ -1,7 +1,6 @@
 use wstd::http::{Body, Client, Request, error::ErrorCode};
 
 /// Test that `outgoing_handler::handle` errors are properly propagated.
-#[wstd::test]
 async fn handle_returns_error_code() -> Result<(), Box<dyn std::error::Error>> {
     let request = Request::get("ftp://example.com/").body(Body::empty())?;
 
@@ -18,4 +17,8 @@ async fn handle_returns_error_code() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     Ok(())
+}
+
+wstd::test_main! {
+    handle_returns_error_code,
 }

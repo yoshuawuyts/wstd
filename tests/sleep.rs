@@ -2,13 +2,11 @@ use std::error::Error;
 use wstd::task::sleep;
 use wstd::time::{Duration, Instant};
 
-#[wstd::test]
 async fn just_sleep() -> Result<(), Box<dyn Error>> {
     sleep(Duration::from_secs(1)).await;
     Ok(())
 }
 
-#[wstd::test]
 async fn sleep_elapsed() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     sleep(Duration::from_millis(100)).await;
@@ -22,4 +20,9 @@ async fn sleep_elapsed() -> Result<(), Box<dyn Error>> {
         "sleep: elapsed {elapsed:?} should be < 2s"
     );
     Ok(())
+}
+
+wstd::test_main! {
+    just_sleep,
+    sleep_elapsed,
 }

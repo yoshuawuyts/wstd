@@ -53,6 +53,50 @@ humantime.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 
+# Integration tests use `wstd::test_main!` with a custom `harness = false`
+# entry point. This is required for p3, where the test binary must async-lift
+# its `wasi:cli/run` export (libtest lifts `main` synchronously, which cannot
+# block on async imports). See `wstd::test_main!` for details.
+[[test]]
+name = "timer"
+harness = false
+
+[[test]]
+name = "sleep"
+harness = false
+
+[[test]]
+name = "stdio"
+harness = false
+
+[[test]]
+name = "http_get"
+harness = false
+
+[[test]]
+name = "http_get_json"
+harness = false
+
+[[test]]
+name = "http_post"
+harness = false
+
+[[test]]
+name = "http_post_json"
+harness = false
+
+[[test]]
+name = "http_handle_error_code"
+harness = false
+
+[[test]]
+name = "http_timeout"
+harness = false
+
+[[test]]
+name = "http_first_byte_timeout"
+harness = false
+
 [workspace]
 members = [
     "axum",
