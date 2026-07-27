@@ -151,9 +151,11 @@ fn http_server() -> Result<()> {
     // connection
     match ureq::get("http://127.0.0.1:8081/response-body-fail").call() {
         Err(ureq::Error::Io(_transport)) => {}
-        result => {
-            panic!("/response-body-fail expected io error, got: {result:?}")
-        }
+        Ok(mut resp) => match resp.body_mut().read_to_vec() {
+            Err(ureq::Error::Io(_transport)) => {}
+            result => panic!("/response-body-fail expected io error, got: {result:?}"),
+        },
+        result => panic!("/response-body-fail expected io error, got: {result:?}"),
     }
 
     Ok(())
