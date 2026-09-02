@@ -1,8 +1,7 @@
 use std::error::Error;
 use wstd::http::{Client, HeaderValue, Request};
 
-#[wstd::test]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn http_post() -> Result<(), Box<dyn Error>> {
     let request = Request::post("https://postman-echo.com/post")
         .header(
             "content-type",
@@ -48,4 +47,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     Ok(())
+}
+
+wstd::test_main! {
+    http_post,
 }

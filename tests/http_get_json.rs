@@ -7,8 +7,7 @@ struct Echo {
     url: String,
 }
 
-#[wstd::test]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn http_get_json() -> Result<(), Box<dyn Error>> {
     let request = Request::get("https://postman-echo.com/get").body(Body::empty())?;
 
     let response = Client::new().send(request).await?;
@@ -26,4 +25,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     Ok(())
+}
+
+wstd::test_main! {
+    http_get_json,
 }
