@@ -5,6 +5,7 @@ use std::process::Command;
 fn tcp_echo_server() -> Result<()> {
     use std::io::{Read, Write};
     use std::net::{Shutdown, TcpStream};
+    use test_programs::get_listening_address;
 
     println!("testing {}", test_programs::TCP_ECHO_SERVER);
 
@@ -81,41 +82,4 @@ fn tcp_echo_server() -> Result<()> {
     wasmtime_process.kill()?;
 
     Ok(())
-}
-
-fn get_listening_address(
-    mut wasmtime_stdout: std::process::ChildStdout,
-) -> Result<std::net::SocketAddr> {
-    use std::io::Read;
-    use std::thread::sleep;
-    use std::time::Duration;
-
-    // Gather complete contents of stdout here
-    let mut stdout_contents = String::new();
-    loop {
-        // Wait for process to print
-        sleep(Duration::from_millis(100));
-
-        // Read more that the process printed, append to contents
-        let mut buf = vec![0; 4096];
-        let len = wasmtime_stdout
-            .read(&mut buf)
-            .context("reading wasmtime stdout")?;
-        buf.truncate(len);
-        stdout_contents
-            .push_str(std::str::from_utf8(&buf).context("wasmtime stdout should be string")?);
-
-        // Parse out the line where guest program says where it is listening
-        for line in stdout_contents.lines() {
-            if let Some(rest) = line.strip_prefix("Listening on ") {
-                // Forget wasmtime_stdout, rather than drop it, so that any
-                // subsequent stdout from wasmtime doesn't panic on a broken
-                // pipe.
-                std::mem::forget(wasmtime_stdout);
-                return rest
-                    .parse()
-                    .with_context(|| format!("parsing socket addr from line: {line:?}"));
-            }
-        }
-    }
 }
