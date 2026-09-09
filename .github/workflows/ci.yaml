@@ -59,7 +59,7 @@ jobs:
 
     - name: wstd p3 tests
       if: matrix.rust == 'nightly'
-      run: cargo test -p wstd -p wstd-axum --target wasm32-wasip3 -Z build-std=std,panic_abort -- --nocapture
+      run: cargo test -p wstd -p wstd-axum --target wasm32-wasip3 -- --nocapture
 
     - name: test-programs tests
       run: cargo test -p test-programs -- --nocapture
