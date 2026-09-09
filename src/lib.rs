@@ -71,9 +71,10 @@ pub mod rand;
 pub mod runtime;
 #[cfg(all(target_os = "wasi", target_env = "p3"))]
 pub mod runtime {
-    pub fn block_on<F>(fut: F) -> F::Output
+    pub fn block_on<F, T>(fut: F) -> F::Output
     where
-        F: Future + 'static,
+        F: Future<Output = T>,
+        T: 'static,
     {
         wasip3::wit_bindgen::block_on(fut)
     }
