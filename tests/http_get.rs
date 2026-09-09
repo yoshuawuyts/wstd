@@ -1,3 +1,5 @@
+#![cfg(target_env = "p2")]
+
 use std::error::Error;
 use wstd::http::{Body, Client, HeaderValue, Request};
 

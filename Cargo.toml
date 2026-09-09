@@ -13,15 +13,8 @@ repository.workspace = true
 rust-version.workspace = true
 
 [features]
-default = ["json", "p2"]
+default = ["json"]
 json = ["dep:serde", "dep:serde_json"]
-
-# WASI backend selection. Exactly one of these must be enabled.
-p2 = ["dep:wasip2"]
-p3 = ["dep:wasip3"]
-
-[build-dependencies]
-cfg_aliases.workspace = true
 
 [dependencies]
 anyhow.workspace = true
@@ -36,12 +29,15 @@ pin-project-lite.workspace = true
 slab.workspace = true
 wstd-macro.workspace = true
 
-wasip2 = { workspace = true, optional = true }
-wasip3 = { workspace = true, optional = true }
-
 # optional
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
+
+[target.'cfg(target_env = "p2")'.dependencies]
+wasip2.workspace = true
+
+[target.'cfg(target_env = "p3")'.dependencies]
+wasip3.workspace = true
 
 [dev-dependencies]
 anyhow.workspace = true
@@ -51,62 +47,6 @@ futures-concurrency.workspace = true
 humantime.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
-
-[[test]]
-name = "http_first_byte_timeout"
-required-features = ["p2"]
-
-[[test]]
-name = "http_get"
-required-features = ["p2"]
-
-[[test]]
-name = "http_get_json"
-required-features = ["p2"]
-
-[[test]]
-name = "http_handle_error_code"
-required-features = ["p2"]
-
-[[test]]
-name = "http_post"
-required-features = ["p2"]
-
-[[test]]
-name = "http_post_json"
-required-features = ["p2"]
-
-[[test]]
-name = "http_timeout"
-required-features = ["p2"]
-
-[[test]]
-name = "sleep"
-required-features = ["p2"]
-
-[[example]]
-name = "complex_http_client"
-required-features = ["p2"]
-
-[[example]]
-name = "http_client"
-required-features = ["p2"]
-
-[[example]]
-name = "http_server"
-required-features = ["p2"]
-
-[[example]]
-name = "http_server_proxy"
-required-features = ["p2"]
-
-[[example]]
-name = "tcp_echo_server"
-required-features = ["p2"]
-
-[[example]]
-name = "tcp_stream_client"
-required-features = ["p2"]
 
 [workspace]
 members = [
@@ -137,7 +77,6 @@ async-task = "4.7"
 axum = { version = "0.8.6", default-features = false }
 bytes = "1.10.1"
 cargo_metadata = "0.22"
-cfg_aliases = "0.2"
 clap = { version = "4.5.26", features = ["derive"] }
 futures-core = "0.3.19"
 futures-lite = "1.12.0"

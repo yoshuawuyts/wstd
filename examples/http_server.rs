@@ -1,3 +1,6 @@
+#![cfg_attr(not(target_env = "p2"), no_main)]
+#![cfg(target_env = "p2")]
+
 use anyhow::{Context, Result};
 use futures_lite::stream::{once_future, unfold};
 use http_body_util::{BodyExt, StreamBody};

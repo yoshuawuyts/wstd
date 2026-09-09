@@ -31,6 +31,11 @@ runs:
         rustup update "${{ steps.select.outputs.version }}" --no-self-update
         rustup default "${{ steps.select.outputs.version }}"
 
+        # Required for -Zbuild-std for the wasip3 target.
+        if [ "${{ inputs.toolchain }}" = "nightly" ]; then
+          rustup component add rust-src
+        fi
+
         # Save disk space by avoiding incremental compilation. Also turn down
         # debuginfo from 2 to 0 to help save disk space.
         cat >> "$GITHUB_ENV" <<EOF

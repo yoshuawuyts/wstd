@@ -1,3 +1,6 @@
+#![cfg_attr(not(target_env = "p2"), no_main)]
+#![cfg(target_env = "p2")]
+
 use anyhow::{Result, anyhow};
 use clap::{ArgAction, Parser};
 use wstd::http::{Body, BodyExt, Client, Method, Request, Uri};

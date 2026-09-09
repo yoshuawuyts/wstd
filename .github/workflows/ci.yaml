@@ -51,11 +51,12 @@ jobs:
     - name: check
       run: cargo check --workspace --all --bins --examples
 
-    - name: wstd tests
+    - name: wstd p2 tests
       run: cargo test -p wstd -p wstd-axum --target wasm32-wasip2 -- --nocapture
 
-    - name: p3 wstd tests
-      run: cargo test -p wstd -p wstd-axum --target wasm32-wasip2 --no-default-features --features p3 -- --nocapture
+    - name: wstd p3 tests
+      if: matrix.rust == 'nightly'
+      run: cargo test -p wstd -p wstd-axum --target wasm32-wasip3 -Z build-std=std,panic_abort -- --nocapture
 
     - name: test-programs tests
       run: cargo test -p test-programs -- --nocapture
@@ -93,4 +94,3 @@ jobs:
     - run: ./publish bump
     # Make sure the tree is publish-able as-is
     - run: ./publish verify
-
