@@ -1,5 +1,6 @@
 include!(concat!(env!("OUT_DIR"), "/gen.rs"));
 
+use anyhow::{Context, Result, bail};
 use std::fs::File;
 use std::net::TcpStream;
 use std::process::{Child, Command};
@@ -68,5 +69,43 @@ impl WasmtimeServe {
 impl Drop for WasmtimeServe {
     fn drop(&mut self) {
         let _ = self.process.kill();
+    }
+}
+
+/// Read a guest's stdout until it reports where it is listening, and return
+/// that address.
+///
+/// Guest programs which bind a socket print `Listening on {addr}`, so that a
+/// test can discover the address even when the guest picked the port.
+pub fn get_listening_address(
+    mut wasmtime_stdout: std::process::ChildStdout,
+) -> Result<std::net::SocketAddr> {
+    use std::io::Read;
+
+    let mut stdout_contents = String::new();
+    let mut buf = [0; 4096];
+    loop {
+        let len = wasmtime_stdout
+            .read(&mut buf)
+            .context("reading wasmtime stdout")?;
+        if len == 0 {
+            bail!("wasmtime exited before reporting its listening address");
+        }
+        stdout_contents.push_str(
+            std::str::from_utf8(&buf[..len]).context("wasmtime stdout should be string")?,
+        );
+
+        // Parse out the line where guest program says where it is listening
+        for line in stdout_contents.lines() {
+            if let Some(rest) = line.strip_prefix("Listening on ") {
+                // Forget wasmtime_stdout, rather than drop it, so that any
+                // subsequent stdout from wasmtime doesn't panic on a broken
+                // pipe.
+                std::mem::forget(wasmtime_stdout);
+                return rest
+                    .parse()
+                    .with_context(|| format!("parsing socket addr from line: {line:?}"));
+            }
+        }
     }
 }

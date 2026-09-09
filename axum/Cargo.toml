@@ -16,29 +16,9 @@ tower-service.workspace = true
 wstd = { workspace = true, features = ["json"] }
 wstd-axum-macro.workspace = true
 
-[features]
-default = ["p2"]
-p2 = ["wstd/p2"]
-p3 = ["wstd/p3"]
-
-[build-dependencies]
-cfg_aliases.workspace = true
-
 [dev-dependencies]
 anyhow.workspace = true
 futures-concurrency.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_qs.workspace = true
 axum = { workspace = true, features = ["query", "json", "macros"] }
-
-[[example]]
-name = "hello_world"
-required-features = ["p2"]
-
-[[example]]
-name = "hello_world_nomacro"
-required-features = ["p2"]
-
-[[example]]
-name = "weather"
-required-features = ["p2"]
