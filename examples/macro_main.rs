@@ -2,5 +2,5 @@
 
 #[wstd::main]
 async fn main() {
-    assert_eq!(1 + 1, 2);
+    println!("Hello world");
 }

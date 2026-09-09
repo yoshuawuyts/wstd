@@ -69,18 +69,23 @@ pub mod net;
 pub mod rand;
 #[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod runtime;
+#[cfg(all(target_os = "wasi", target_env = "p3"))]
+pub mod runtime {
+    pub fn block_on<F>(fut: F) -> F::Output
+    where
+        F: Future + 'static,
+    {
+        wasip3::wit_bindgen::block_on(fut)
+    }
+}
 #[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod task;
 #[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod time;
 
-#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub use wstd_macro::{
     attr_macro_http_server as http_server, attr_macro_main as main, attr_macro_test as test,
 };
-
-#[cfg(all(target_os = "wasi", target_env = "p3"))]
-pub use wstd_macro::{attr_macro_main_p3 as main, attr_macro_test_p3 as test};
 
 // Re-export the active WASI backend crate for use only by `wstd-macro` macros.
 // The proc macros need to generate code that uses these definitions, but we
