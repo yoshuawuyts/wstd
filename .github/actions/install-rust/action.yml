@@ -29,7 +29,17 @@ runs:
       run: |
         rustup set profile minimal
         rustup update "${{ steps.select.outputs.version }}" --no-self-update
-        rustup default "${{ steps.select.outputs.version }}"
+        # `rustup default` gets overwritten by rust-toolchain.toml, `rustup
+        # override` has higher precedence though.
+        rustup override set "${{ steps.select.outputs.version }}"
+
+        rustup target add wasm32-wasip2
+
+        # Required for -Zbuild-std for the wasip3 target.
+        if [ "${{ inputs.toolchain }}" = "nightly" ]; then
+          rustup target add wasm32-wasip3
+          rustup component add rust-src
+        fi
 
         # Save disk space by avoiding incremental compilation. Also turn down
         # debuginfo from 2 to 0 to help save disk space.

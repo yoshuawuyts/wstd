@@ -1,3 +1,6 @@
+#![cfg_attr(not(all(target_os = "wasi", target_env = "p2")), no_main)]
+#![cfg(all(target_os = "wasi", target_env = "p2"))]
+
 //! This demo app shows a Axum based wasi-http server making an arbitrary
 //! number of http requests as part of serving a single response.
 //!
