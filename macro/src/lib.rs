@@ -2,15 +2,6 @@ use proc_macro::TokenStream;
 use quote::{quote, quote_spanned};
 use syn::{ItemFn, parse_macro_input, spanned::Spanned};
 
-fn returns_unit(output: &syn::ReturnType) -> bool {
-    match output {
-        syn::ReturnType::Default => true,
-        syn::ReturnType::Type(_, ty) => {
-            matches!(&**ty, syn::Type::Tuple(tuple) if tuple.elems.is_empty())
-        }
-    }
-}
-
 #[proc_macro_attribute]
 pub fn attr_macro_main(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
