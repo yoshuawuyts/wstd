@@ -48,6 +48,9 @@ jobs:
         role-to-assume: arn:aws:iam::313377415443:role/wstd-aws-ci-role
         role-session-name: github-ci
 
+    - name: rust version
+      run: cargo --version
+
     - name: check
       run: cargo check --workspace --all --bins --examples
 
