@@ -33,8 +33,11 @@ runs:
         # override` has higher precedence though.
         rustup override set "${{ steps.select.outputs.version }}"
 
+        rustup target add wasm32-wasip2
+
         # Required for -Zbuild-std for the wasip3 target.
         if [ "${{ inputs.toolchain }}" = "nightly" ]; then
+          rustup target add wasm32-wasip3
           rustup component add rust-src
         fi
 
