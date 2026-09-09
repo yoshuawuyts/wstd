@@ -1,4 +1,4 @@
-#![cfg(target_env = "p2")]
+#![cfg(all(target_os = "wasi", target_env = "p2"))]
 
 use std::error::Error;
 use wstd::task::sleep;

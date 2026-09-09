@@ -1,4 +1,4 @@
-#![cfg(target_env = "p2")]
+#![cfg(all(target_os = "wasi", target_env = "p2"))]
 
 use wstd::future::FutureExt;
 use wstd::http::{Body, Client, Request};

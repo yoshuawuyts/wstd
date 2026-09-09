@@ -55,26 +55,26 @@
 //! These are unique capabilities provided by WASI 0.2, and because this library
 //! is specific to that are exposed from here.
 
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod future;
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 #[macro_use]
 pub mod http;
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod io;
 pub mod iter;
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod net;
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod rand;
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod runtime;
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod task;
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod time;
 
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub use wstd_macro::{
     attr_macro_http_server as http_server, attr_macro_main as main, attr_macro_test as test,
 };
@@ -86,13 +86,13 @@ pub use wstd_macro::{
 // private.
 #[doc(hidden)]
 pub mod __internal {
-    #[cfg(target_env = "p2")]
+    #[cfg(all(target_os = "wasi", target_env = "p2"))]
     pub use wasip2;
-    #[cfg(target_env = "p3")]
+    #[cfg(all(target_os = "wasi", target_env = "p3"))]
     pub use wasip3;
 }
 
-#[cfg(target_env = "p2")]
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod prelude {
     pub use crate::future::FutureExt as _;
     pub use crate::io::AsyncRead as _;
