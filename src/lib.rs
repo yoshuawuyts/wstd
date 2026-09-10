@@ -84,9 +84,10 @@ pub mod task;
 #[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod time;
 
-pub use wstd_macro::{
-    attr_macro_http_server as http_server, attr_macro_main as main, attr_macro_test as test,
-};
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
+pub use wstd_macro::attr_macro_http_server as http_server;
+
+pub use wstd_macro::{attr_macro_main as main, attr_macro_test as test};
 
 // Re-export the active WASI backend crate for use only by `wstd-macro` macros.
 // The proc macros need to generate code that uses these definitions, but we
