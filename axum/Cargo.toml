@@ -13,7 +13,7 @@ rust-version.workspace = true
 [dependencies]
 axum.workspace = true
 tower-service.workspace = true
-wstd = { workspace = true, features = ["json"] }
+wstd.workspace = true
 wstd-axum-macro.workspace = true
 
 [dev-dependencies]

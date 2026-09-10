@@ -101,12 +101,13 @@ tower-service = "0.3.3"
 ureq = { version = "3.1", default-features = false, features = ["json"] }
 wasip2 = "1.0"
 wasip3 = "0.8"
-wstd = { path = ".", version = "=0.6.8", default-features = false }
+wstd = { path = ".", version = "=0.6.8" }
 wstd-axum = { path = "./axum", version = "=0.6.8" }
 wstd-axum-macro = { path = "./axum/macro", version = "=0.6.8" }
 wstd-macro = { path = "./macro", version = "=0.6.8" }
 
 [package.metadata.docs.rs]
+all-features = true
 targets = [
     "wasm32-wasip2"
 ]
