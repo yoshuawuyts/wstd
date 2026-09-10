@@ -55,30 +55,44 @@
 //! These are unique capabilities provided by WASI 0.2, and because this library
 //! is specific to that are exposed from here.
 
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod future;
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 #[macro_use]
 pub mod http;
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod io;
 pub mod iter;
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod net;
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod rand;
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod runtime;
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod task;
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod time;
 
-pub use wstd_macro::attr_macro_http_server as http_server;
-pub use wstd_macro::attr_macro_main as main;
-pub use wstd_macro::attr_macro_test as test;
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
+pub use wstd_macro::{
+    attr_macro_http_server as http_server, attr_macro_main as main, attr_macro_test as test,
+};
 
-// Re-export the wasip2 crate for use only by `wstd-macro` macros. The proc
-// macros need to generate code that uses these definitions, but we don't want
-// to treat it as part of our public API with regards to semver, so we keep it
-// under `__internal` as well as doc(hidden) to indicate it is private.
+// Re-export the active WASI backend crate for use only by `wstd-macro` macros.
+// The proc macros need to generate code that uses these definitions, but we
+// don't want to treat it as part of our public API with regards to semver, so
+// we keep it under `__internal` as well as doc(hidden) to indicate it is
+// private.
 #[doc(hidden)]
 pub mod __internal {
+    #[cfg(all(target_os = "wasi", target_env = "p2"))]
     pub use wasip2;
+    #[cfg(all(target_os = "wasi", target_env = "p3"))]
+    pub use wasip3;
 }
 
+#[cfg(all(target_os = "wasi", target_env = "p2"))]
 pub mod prelude {
     pub use crate::future::FutureExt as _;
     pub use crate::io::AsyncRead as _;
