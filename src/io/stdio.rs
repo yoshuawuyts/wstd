@@ -43,8 +43,8 @@ impl AsyncRead for Stdin {
     }
 
     #[inline]
-    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
-        Some(&self.stream)
+    fn as_async_input_stream(&mut self) -> Option<&mut AsyncInputStream> {
+        Some(&mut self.stream)
     }
 }
 
@@ -93,7 +93,7 @@ impl AsyncWrite for Stdout {
     }
 
     #[inline]
-    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+    fn as_async_output_stream(&mut self) -> Option<&mut AsyncOutputStream> {
         self.stream.as_async_output_stream()
     }
 }
@@ -143,7 +143,7 @@ impl AsyncWrite for Stderr {
     }
 
     #[inline]
-    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
+    fn as_async_output_stream(&mut self) -> Option<&mut AsyncOutputStream> {
         self.stream.as_async_output_stream()
     }
 }

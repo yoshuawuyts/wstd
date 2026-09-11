@@ -86,8 +86,17 @@ impl TcpStream {
         Ok(format!("{addr:?}"))
     }
 
-    pub fn split(&self) -> (ReadHalf<'_>, WriteHalf<'_>) {
-        (ReadHalf(self), WriteHalf(self))
+    pub fn split(&mut self) -> (ReadHalf<'_>, WriteHalf<'_>) {
+        (
+            ReadHalf {
+                stream: &mut self.input,
+                socket: &self.socket,
+            },
+            WriteHalf {
+                stream: &mut self.output,
+                socket: &self.socket,
+            },
+        )
     }
 }
 
@@ -104,18 +113,8 @@ impl io::AsyncRead for TcpStream {
         self.input.read(buf).await
     }
 
-    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
-        Some(&self.input)
-    }
-}
-
-impl io::AsyncRead for &TcpStream {
-    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.input.read(buf).await
-    }
-
-    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
-        (**self).as_async_input_stream()
+    fn as_async_input_stream(&mut self) -> Option<&mut AsyncInputStream> {
+        Some(&mut self.input)
     }
 }
 
@@ -128,64 +127,56 @@ impl io::AsyncWrite for TcpStream {
         self.output.flush().await
     }
 
-    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
-        Some(&self.output)
+    fn as_async_output_stream(&mut self) -> Option<&mut AsyncOutputStream> {
+        Some(&mut self.output)
     }
 }
 
-impl io::AsyncWrite for &TcpStream {
-    async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.output.write(buf).await
-    }
-
-    async fn flush(&mut self) -> io::Result<()> {
-        self.output.flush().await
-    }
-
-    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
-        (**self).as_async_output_stream()
-    }
-}
-
-pub struct ReadHalf<'a>(&'a TcpStream);
-impl<'a> io::AsyncRead for ReadHalf<'a> {
-    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.read(buf).await
-    }
-
-    fn as_async_input_stream(&self) -> Option<&AsyncInputStream> {
-        self.0.as_async_input_stream()
-    }
+pub struct ReadHalf<'a> {
+    stream: &'a mut AsyncInputStream,
+    socket: &'a TcpSocket,
 }
 
 impl<'a> Drop for ReadHalf<'a> {
     fn drop(&mut self) {
         let _ = self
-            .0
             .socket
             .shutdown(wasip2::sockets::tcp::ShutdownType::Receive);
     }
 }
 
-pub struct WriteHalf<'a>(&'a TcpStream);
+impl<'a> io::AsyncRead for ReadHalf<'a> {
+    async fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.stream.read(buf).await
+    }
+
+    fn as_async_input_stream(&mut self) -> Option<&mut AsyncInputStream> {
+        self.stream.as_async_input_stream()
+    }
+}
+
+pub struct WriteHalf<'a> {
+    stream: &'a mut AsyncOutputStream,
+    socket: &'a TcpSocket,
+}
+
 impl<'a> io::AsyncWrite for WriteHalf<'a> {
     async fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.0.write(buf).await
+        self.stream.write(buf).await
     }
 
     async fn flush(&mut self) -> io::Result<()> {
-        self.0.flush().await
+        self.stream.flush().await
     }
 
-    fn as_async_output_stream(&self) -> Option<&AsyncOutputStream> {
-        self.0.as_async_output_stream()
+    fn as_async_output_stream(&mut self) -> Option<&mut AsyncOutputStream> {
+        self.stream.as_async_output_stream()
     }
 }
 
 impl<'a> Drop for WriteHalf<'a> {
     fn drop(&mut self) {
         let _ = self
-            .0
             .socket
             .shutdown(wasip2::sockets::tcp::ShutdownType::Send);
     }

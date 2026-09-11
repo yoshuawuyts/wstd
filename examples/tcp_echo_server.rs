@@ -7,7 +7,7 @@ use wstd::net::TcpListener;
 
 #[wstd::main]
 async fn main() -> io::Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:8080").await?;
+    let mut listener = TcpListener::bind("127.0.0.1:8080").await?;
     println!("Listening on {}", listener.local_addr()?);
     println!("type `nc localhost 8080` to create a TCP client");
 
@@ -17,7 +17,9 @@ async fn main() -> io::Result<()> {
         println!("Accepted from: {}", stream.peer_addr()?);
         wstd::runtime::spawn(async move {
             // If echo copy fails, we can ignore it.
-            let _ = io::copy(&stream, &stream).await;
+            let mut stream = stream;
+            let (mut read_half, mut write_half) = stream.split();
+            let _ = io::copy(&mut read_half, &mut write_half).await;
         })
         .detach();
     }
