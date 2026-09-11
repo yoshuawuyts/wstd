@@ -55,7 +55,7 @@ impl TcpListener {
     }
 
     /// Returns an iterator over the connections being received on this listener.
-    pub fn incoming(&self) -> Incoming<'_> {
+    pub fn incoming(&mut self) -> Incoming<'_> {
         Incoming { listener: self }
     }
 }
@@ -63,7 +63,7 @@ impl TcpListener {
 /// An iterator that infinitely accepts connections on a TcpListener.
 #[derive(Debug)]
 pub struct Incoming<'a> {
-    listener: &'a TcpListener,
+    listener: &'a mut TcpListener,
 }
 
 impl<'a> AsyncIterator for Incoming<'a> {

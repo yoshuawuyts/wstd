@@ -3,7 +3,7 @@ use crate::http::{
     error::Context as _,
     fields::{header_map_from_wasi, header_map_to_wasi},
 };
-use crate::io::{AsyncInputStream, AsyncOutputStream};
+use crate::io::{AsyncInputStream, AsyncOutputStream, AsyncWrite};
 use crate::runtime::{AsyncPollable, Reactor, WaitFor};
 
 pub use ::http_body::{Body as HttpBody, Frame, SizeHint};
@@ -77,7 +77,7 @@ impl Body {
         match self.0 {
             BodyInner::Incoming(incoming) => incoming.send(outgoing_body).await,
             BodyInner::Boxed(box_body) => {
-                let out_stream = AsyncOutputStream::new(
+                let mut out_stream = AsyncOutputStream::new(
                     outgoing_body
                         .write()
                         .expect("outgoing body already written"),
@@ -108,7 +108,7 @@ impl Body {
                 }
             }
             BodyInner::Complete { data, trailers } => {
-                let out_stream = AsyncOutputStream::new(
+                let mut out_stream = AsyncOutputStream::new(
                     outgoing_body
                         .write()
                         .expect("outgoing body already written"),
@@ -348,14 +348,14 @@ impl Incoming {
     }
     async fn send(self, outgoing_body: WasiOutgoingBody) -> Result<(), Error> {
         let in_body = self.body;
-        let in_stream =
+        let mut in_stream =
             AsyncInputStream::new(in_body.stream().expect("incoming body already read"));
-        let out_stream = AsyncOutputStream::new(
+        let mut out_stream = AsyncOutputStream::new(
             outgoing_body
                 .write()
                 .expect("outgoing body already written"),
         );
-        in_stream.copy_to(&out_stream).await.map_err(|e| {
+        in_stream.copy_to(&mut out_stream).await.map_err(|e| {
             Error::from(e).context("copying incoming body stream to outgoing body stream")
         })?;
         drop(in_stream);

@@ -28,7 +28,7 @@ pub trait AsyncRead {
     // If the `AsyncRead` implementation is an unbuffered wrapper around an
     // `AsyncInputStream`, some I/O operations can be more efficient.
     #[inline]
-    fn as_async_input_stream(&self) -> Option<&io::AsyncInputStream> {
+    fn as_async_input_stream(&mut self) -> Option<&mut io::AsyncInputStream> {
         None
     }
 }
@@ -45,7 +45,7 @@ impl<R: AsyncRead + ?Sized> AsyncRead for &mut R {
     }
 
     #[inline]
-    fn as_async_input_stream(&self) -> Option<&io::AsyncInputStream> {
+    fn as_async_input_stream(&mut self) -> Option<&mut io::AsyncInputStream> {
         (**self).as_async_input_stream()
     }
 }
